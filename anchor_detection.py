@@ -31,7 +31,8 @@ def _get_good_points(all_matches, ratio=0.2):
     Filter only images which uphold Lowe's ratio test.
     :return: An array of all relevant matches alongside Lowe's ratio (array of couples).
     """
-    return [[(m, m.distance / n.distance) for m, n in m_array if m.distance < ratio * n.distance] for m_array in all_matches]
+    return [[(m, m.distance / n.distance) for m, n in m_array if m.distance < ratio * n.distance] for m_array in
+            all_matches]
 
 
 def _filter_by_max_amount(arr, k=10):
