@@ -62,14 +62,13 @@ def detect_objects(combined_image):
 def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
     # Define the full pipeline
     full_pipeline = [
-        ('load_images', FunctionTransformer(load_images)),
-        ('preprocess_images', FunctionTransformer(preprocess_images)),
-        ('detect_anchors', FunctionTransformer(detect_anchors)),
-        ('connect_images', FunctionTransformer(connect_images)),
-        ('shift_images', FunctionTransformer(shift_images)),
-        ('combine_images', FunctionTransformer(combine_images)),
-        ('detect_objects', FunctionTransformer(detect_objects)),
-    ]
+        ('load_images', load_images),
+        ('preprocess_images', preprocess_images),
+        ('detect_anchors', detect_anchors),
+        ('connect_images', connect_images),
+        ('shift_images', shift_images),
+        ('combine_images', combine_images),
+        ('detect_objects', detect_objects)]
 
     # Get the start and end indices of the pipeline
     if start_step is not None:
