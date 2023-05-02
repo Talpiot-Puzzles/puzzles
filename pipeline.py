@@ -1,5 +1,17 @@
-from sklearn.pipeline import Pipeline
+class Pipeline:
+    def __init__(self, steps, input=None):
+        self.accessible_data = None
+        self.input = input
+        self.steps = steps
 
+    def run(self):
+        # Run the pipeline steps in sequence
+        data = input
+        for step in self.steps:
+            data = step[1](data)
+        return data
+    
+    
 # Step 1: Load images from database
 def load_images(image_dir):
     image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(".jpg")]
@@ -47,7 +59,7 @@ def detect_objects(combined_image):
     return labeled_image
 
 # Define the updated pipeline
-pipeline = Pipeline([
+full_pipeline = [
     ('load_images', FunctionTransformer(load_images)),
     ('preprocess_images', FunctionTransformer(preprocess_images)),
     ('detect_anchors', FunctionTransformer(detect_anchors)),
@@ -55,8 +67,22 @@ pipeline = Pipeline([
     ('shift_images', FunctionTransformer(shift_images)),
     ('combine_images', FunctionTransformer(combine_images)),
     ('detect_objects', FunctionTransformer(detect_objects)),
-])
+]
+
+def partial_pipeline(start_step=None, end_step=None):
+    if start_step is not None:
+        start_index = [i for i, (name, _) in enumerate(pipeline) if name == start_step][0]
+    else:
+        start_index = 0
+        
+    if end_step is not None:
+        end_index = [i for i, (name, _) in enumerate(pipeline) if name == end_step][0] + 1
+    else:
+        end_index = len(pipeline)
+        
+    return Pipeline(pipeline[start_index:end_index])
 
 # Example usage
-image_dir = '/path/to/image/directory'
-labeled_image = pipeline.fit_transform(image_dir)
+p = partial_pipeline(start_step='load_images', end_step='combine_images')
+p.input = '/path/to/image/directory'
+combined_image = p.run()
