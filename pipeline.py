@@ -68,8 +68,7 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
         ('connect_images', connect_images),
         ('shift_images', shift_images),
         ('combine_images', combine_images),
-        ('detect_objects', detect_objects),
-    ]
+        ('detect_objects', detect_objects)]
 
     # Get the start and end indices of the pipeline
     if start_step is not None:
