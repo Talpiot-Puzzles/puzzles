@@ -1,3 +1,8 @@
+import os
+
+import cv2
+
+
 class Pipeline:
     def __init__(self, steps, pipeline_input=None):
         self.accessible_data = None
@@ -6,13 +11,12 @@ class Pipeline:
 
     def run(self):
         # Run the pipeline steps in sequence
-        data = pipeline_input
+        data = self.pipeline_input
         for step_name, step_func in self.steps:
             try:
                 data = step_func(data)
             except Exception as e:
-                print(f"Error running step '{step_name}': {str(e)}")
-                break
+                raise ValueError(f"Error running step '{step_name}': {str(e)}")
         return data
 
 
