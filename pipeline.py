@@ -95,7 +95,8 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
     return Pipeline(steps, pipeline_input)
 
 
-# Example usage
-input_data = '/path/to/image/directory'
-p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
-output_data = p.run()
+if __name__ == '__main__':
+    # Example usage
+    input_data = '/path/to/image/directory'
+    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
+    output_data = p.run()
