@@ -59,7 +59,7 @@ def _prepare_images_to_draw(kps, chosen):
 
 
 def detect_anchors(images):
-    descs, kps = _get_anchors_in_all_images(images)
+    kps, descs = _get_anchors_in_all_images(images)
     matches = _get_all_matches(descs)
     good_points = _get_good_points(matches)
     good_points = _filter_by_max_amount(good_points)
