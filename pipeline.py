@@ -1,6 +1,11 @@
 import os
+import traceback
 
 import cv2
+from matplotlib import pyplot as plt
+
+import anchor_detection
+import plain_transform
 
 
 class Pipeline:
@@ -16,6 +21,7 @@ class Pipeline:
             try:
                 data = step_func(data)
             except Exception as e:
+                traceback.format_exc()
                 raise ValueError(f"Error running step '{step_name}': {str(e)}")
         return data
 
@@ -23,24 +29,26 @@ class Pipeline:
 # Step 1: Load images from database
 def load_images(image_dir):
     image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(".jpg")]
-    images = [cv2.imread(path) for path in image_paths]
+    images = [cv2.imread(path)[..., ::-1] for path in image_paths]
     return images
 
 
 # Step 2: Preprocess images
 def preprocess_images(images):
+    return images
     preprocessed_images = [preprocess_image(image) for image in images]
     return preprocessed_images
 
 
 # Step 3: Anchor detection
 def detect_anchors(preprocessed_images):
-    anchors = detect_anchors_from_images(preprocessed_images)
-    return anchors
+    return anchor_detection.detect_anchors(preprocessed_images)
 
 
 # Step 4: Connect images
 def connect_images(anchors):
+    to_use = [[anchors[i], anchors[i+1]] for i in range(0, len(anchors) - 1, 2)]
+    return plain_transform.plain_transform(to_use)
     connected_images = connect_images_from_anchors(anchors)
     return connected_images
 
@@ -97,6 +105,8 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
 
 if __name__ == '__main__':
     # Example usage
-    input_data = '/path/to/image/directory'
-    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
+    input_data = 'images'
+    # p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
+    p = make_pipeline(start_step='load_images', end_step='connect_images', pipeline_input=input_data)
     output_data = p.run()
+    print(output_data)

@@ -119,7 +119,8 @@ def find_relative_movement(adjacent_movement):
     """
     adjacent_movement = np.array(adjacent_movement)
     relative_movement = np.cumsum(adjacent_movement, axis=1)
-    relative_movement[2, :] = relative_movement[2, :] % DEGREES_IN_CIRCLE
+    # relative_movement[2, :] = relative_movement[2, :] % DEGREES_IN_CIRCLE
+    relative_movement[:, 2] = relative_movement[:, 2] % DEGREES_IN_CIRCLE
 
     return relative_movement
 
