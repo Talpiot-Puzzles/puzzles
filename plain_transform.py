@@ -123,6 +123,16 @@ def find_relative_movement(adjacent_movement):
 
     return relative_movement
 
+def plain_transform(mathces):
+    """
+    calculate distance and rotation between every two adjacent images
+    :param matches: list of list of tuple with matches between every two adjacent:
+                    [[[(1,1), (2,2)], [(1,1), (2,2)]], [[(3,3), (4,4)], [(3,3), (4,4)]]]
+    :return: list of distance and rotation between every image to the base image, the format is:
+                            [(x_d_i, y_d_i, rotation_i]
+    """
+    return find_relative_movement(find_adjacent_image_movement(mathces))
+
 
 def main():
     # load the images using cv2
