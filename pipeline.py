@@ -5,6 +5,7 @@ import cv2
 from matplotlib import pyplot as plt
 
 import anchor_detection
+import plain_movement
 import plain_transform
 
 
@@ -54,8 +55,12 @@ def connect_images(anchors):
 
 
 # Step 5: Shift images
-def shift_images(connected_images):
-    shifted_images = focus_by_lower_plane(connected_images)
+def shift_images(shifts):
+    # Todo rotate images in advance
+    shifts_only = [el[:2] for el in shifts]
+    # TODO iterate over h2 options
+    return plain_movement.refocuse_multipule_images(shifts_only, plain_movement.H1 + plain_movement.H2, plain_movement.H2)
+    shifted_images = focus_by_lower_plane(shifts)
     return shifted_images
 
 
@@ -107,6 +112,6 @@ if __name__ == '__main__':
     # Example usage
     input_data = 'images'
     # p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
-    p = make_pipeline(start_step='load_images', end_step='connect_images', pipeline_input=input_data)
+    p = make_pipeline(start_step='load_images', end_step='shift_images', pipeline_input=input_data)
     output_data = p.run()
     print(output_data)
