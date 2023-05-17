@@ -72,4 +72,4 @@ def get_spatial_engle(x,y, X = 640, Y = 360, HFOV = 57):
     phi = numpy.arctan2(ym, xm)
     return (tet, phi)
 
-print (get_spatial_engle(1092, 812)[0]*180/numpy.pi, get_spatial_engle(1092, 812)[1]*180/numpy.pi)
+# print (get_spatial_engle(1092, 812)[0]*180/numpy.pi, get_spatial_engle(1092, 812)[1]*180/numpy.pi)
