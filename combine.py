@@ -139,12 +139,10 @@ def kernel_mean(overlap_img: List[List[List[int]]], kernel_size: int = 3):
     combine_img = combine_img.convert('RGB')
     return combine_img
 
-
 def list_mean(lst: List[int]):
     if len(lst) == 0:
         return 0
     return int(np.ceil((sum(lst) / len(lst))))
-
 
 def simple_mean(overlap_img: List[List[List[int]]]) -> Image.Image:
     combine_mean = []
@@ -285,11 +283,10 @@ def calculate_vertices(upper_left, height, width):
     # upper right vertex
     upper_right = (upper_left[0] + width, upper_left[1])
     # lower right vertex
-    lower_right = (upper_right[0] + width, upper_right[1] + height)
+    lower_right = (upper_left[0] + width, upper_left[1] + height)
     # lower left vertex
     lower_left = (upper_left[0], upper_left[1] + height)
-    return [upper_left, upper_right, lower_right, lower_left]
-
+    return [upper_left, upper_right, lower_right,lower_left]
 
 def find_min_max_coordinates(corners):
     x_values = [corner[0] for corner in corners]
@@ -340,7 +337,7 @@ def preprocess_combine(shifted_images: List[Tuple[np.ndarray, Tuple[float, float
     print("### Start preprocesses combine ...")
 
     for shifted_image in tqdm(shifted_images):
-        split_factor = 3
+        split_factor = 1
 
         # Step 1 - split pixels:
         update_shifted_image = split_and_update_shift(shifted_image, split_factor)
