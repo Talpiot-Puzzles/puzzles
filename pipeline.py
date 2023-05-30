@@ -34,9 +34,8 @@ class Pipeline:
 
 # Step 1: Load images from directory
 def load_images(image_dir, pipeline_data):
-    image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if
-                   f.endswith(".png") or f.endswith('.jpg')]
-    image_paths = [image_paths[i] for i in [10, 20, 30, 40]]
+    image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(".png") or f.endswith('.jpg')]
+    # image_paths = [image_paths[i] for i in [220, 180]]
     images = [cv2.imread(path, cv2.IMREAD_GRAYSCALE) for path in image_paths]
     # print(len(images))
     # for img in images:
@@ -94,14 +93,14 @@ def combine_images(shifted_images, pipeline_data):
     combined_image = combine.smart_combine_images(shifted_images)
 
     # merged = Image.fromarray(combined_image)
-    combined_image.save("combined2.jpg")
+    combined_image.save("combined.jpg")
     return combined_image
 
 
-# # Step 7: Object detection
-# def detect_objects(combined_image):
-#     labeled_image = detect_objects_in_image(combined_image, images)
-#     return labeled_image
+# Step 7: Object detection
+def detect_objects(combined_image):
+    labeled_image = detect_objects_in_image(combined_image, images)
+    return labeled_image
 
 
 def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
@@ -112,8 +111,8 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
         ('detect_anchors', detect_anchors),
         ('connect_images', connect_images),
         ('shift_images', shift_images),
-        ('combine_images', combine_images)]
-    # ('detect_objects', detect_objects)]
+        ('combine_images', combine_images),
+        ('detect_objects', detect_objects)]
 
     # Get the start and end indices of the pipeline
     if start_step is not None:
@@ -138,23 +137,21 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
 
 if __name__ == '__main__':
     # Example usage
-    input_data = r'C:\Users\t9146472\Documents\DJI_0004_T__30_H_5_MS'
-    p_anch = make_pipeline(start_step='load_images', end_step='detect_anchors', pipeline_input=input_data)
+    input_data = r'imgs'
     p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
-    anch_data = p_anch.run()
+    # p = make_pipeline(start_step='load_images', end_step='detect_anchors', pipeline_input=input_data)
     output_data = p.run()
+    # images = p.accessible_data['images']
+    # res = [images[0], *(2 * [images[i] for i in range(1, len(images) - 1)]), images[-1]]
+    # res = [np.array(el) for el in res]
+    #
+    # for i, img in enumerate(res):
+    #     for point in output_data[i]:
+    #         res[i] = cv2.circle(img, [int(el) for el in point], 100, (255, 0, 0))
+    #
+    # fig, ax = plt.subplots(1, len(res))
+    # for i in range(len(res)):
+    #     ax[i].imshow(res[i])
+    #
+    # plt.show()
     print(output_data)
-
-    images = p_anch.accessible_data['images']
-    res = [images[0], *(2 * [images[i] for i in range(1, len(images) - 1)]), images[-1]]
-    res = [np.array(el) for el in res]
-
-    for i, img in enumerate(res):
-        for point in anch_data[i]:
-            res[i] = cv2.circle(img, [int(el) for el in point], 100, (255, 0, 0))
-
-    fig, ax = plt.subplots(1, len(res))
-    for i in range(len(res)):
-        ax[i].imshow(res[i])
-
-    plt.show()
