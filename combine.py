@@ -128,7 +128,7 @@ def list_mean(lst: list[int]):
 def simple_mean(overlap_img: list[list[list[int]]]) -> Image.Image:
     combine_mean = []
 
-    for inner_list in overlap_img:
+    for inner_list in tqdm(overlap_img):
         sublist_mean = []
         for values in inner_list:
             values = list(filter(lambda a: a != 0, values))
@@ -177,13 +177,13 @@ def split_pixels(img: np.ndarray, split_factor: int) -> np.ndarray:
             new_array[i*split_factor:(i+1)*split_factor, j*split_factor:(j+1)*split_factor] = img[i, j]
     return new_array
 
-def rotate_image(image: np.ndarray, angle_rad: float) -> tuple[np.ndarray, tuple[int, int]]:
+def rotate_image(image: np.ndarray, angle_deg: float) -> tuple[np.ndarray, tuple[int, int]]:
     """
-    Rotates an image by the specified angle in radians.
+    Rotates an image by the specified angle in degree.
 
     Args:
         image (np.ndarray): The input image as a numpy array.
-        angle_rad (float): The rotation angle in radians.
+        angle_deg (float): The rotation angle in degree.
 
     Returns:
         tuple[np.ndarray, tuple[int, int]]: A tuple containing the rotated image as a numpy array
@@ -194,7 +194,7 @@ def rotate_image(image: np.ndarray, angle_rad: float) -> tuple[np.ndarray, tuple
     """
 
     # Convert the angle to degrees
-    angle_deg = math.degrees(angle_rad)
+    # angle_deg = math.degrees(angle_rad)
 
     # Get the height and width of the image
     height, width = image.shape[:2]
@@ -418,9 +418,9 @@ def combine(m_image_position: dict[str, int], combine_size: tuple[int, int], upd
 
     print("### Combine overlap array ... ")
     # TODO: Implement the more method for combining the overlapping pixels
-    # combined_image = simple_mean(combined_overlap)
+    combined_image = simple_mean(combined_overlap)
     # combined_image = kernel_mean(combined_overlap, kernel_size=3)
-    combined_image = white_is_most_important(combined_overlap)
+    # combined_image = white_is_most_important(combined_overlap)
     print("### End combine ...")
     return combined_image
 
@@ -442,7 +442,7 @@ def smart_combine_images(shifted_images: list[tuple[Image.Image, tuple[float, fl
         combined_image = smart_combine_images(shifted_images)
     """
     # TODO: Remove in the pipeline
-    shifted_images = load_images(shifted_images)
+    # shifted_images = load_images(shifted_images)
     m_image_position, combine_size, update_shifted_images = preprocess_combine(shifted_images)
     combined_image = combine(m_image_position, combine_size, update_shifted_images)
     # Make transform to get highlights on the hot areas
@@ -477,7 +477,5 @@ def main():
     # merged = Image.fromarray(merged)
     merged.save("merged.jpg")
 
-if __name__ == "__main__":
-    main()
 if __name__ == "__main__":
     main()
