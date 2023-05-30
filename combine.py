@@ -12,8 +12,8 @@ def unite_sigmoid(x, upper_width=20, lower_width=30, meanval=127.5):
     # if x <= meanval:
     #     return 255 * (1 / (1 + np.exp((meanval - x) / lower_width)))
     # if x > meanval:
-        return 255 * (1 / (1 + np.exp((meanval - x) / upper_width)))
-
+    #     return 255 * (1 / (1 + np.exp((meanval - x) / upper_width)))
+    return x
 
 def highlights_black_areas(image: np.ndarray, thresh_value: int) -> np.ndarray:
     """

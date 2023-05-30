@@ -35,7 +35,7 @@ class Pipeline:
 # Step 1: Load images from directory
 def load_images(image_dir, pipeline_data):
     image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(".png") or f.endswith('.jpg')]
-    # image_paths = [image_paths[i] for i in [220, 180]]
+    image_paths = [image_paths[i] for i in range(150,160)]
     images = [cv2.imread(path, cv2.IMREAD_GRAYSCALE) for path in image_paths]
     # print(len(images))
     # for img in images:
@@ -88,7 +88,7 @@ def combine_images(shifted_images, pipeline_data):
     images = pipeline_data['images']
     shifted_images = np.insert(shifted_images, 0, [0, 0, 0], axis=0)
     print(shifted_images)
-    shifted_images = [(image, (*shifted[:2], 0)) for image, shifted in zip(images, shifted_images)]
+    shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifted_images)]
     # shifted_images = [(images[0], (shifted_images[0][0], shifted_images[0][1], 0)), (images[1], (shifted_images[1][0], shifted_images[1][1], 0)),  (images[2], (shifted_images[2][0], shifted_images[2][1], 0))]
     combined_image = combine.smart_combine_images(shifted_images)
 
@@ -137,7 +137,7 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
 
 if __name__ == '__main__':
     # Example usage
-    input_data = r'imgs'
+    input_data = r'C:\Users\t9146472\Documents\DJI_0004_T__30_H_5_MS'
     p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
     # p = make_pipeline(start_step='load_images', end_step='detect_anchors', pipeline_input=input_data)
     output_data = p.run()
