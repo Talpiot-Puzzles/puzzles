@@ -9,12 +9,12 @@ from tqdm import tqdm
 
 
 def unite_sigmoid(x, upper_width=1, lower_width=30, meanval=127.5):
-    condition1 = x >= meanval
-    condition2 = x < meanval
-    result1 = 255 / (1 + np.exp((meanval - x) / upper_width))
-    result2 = 255 / (1 + np.exp((meanval - x) / lower_width))
-    result = np.where(condition2, result2, 0) + np.where(condition1, result1, 0)
-    return result
+    # condition1 = x >= meanval
+    # condition2 = x < meanval
+    # result1 = 255 / (1 + np.exp((meanval - x) / upper_width))
+    # result2 = 255 / (1 + np.exp((meanval - x) / lower_width))
+    # result = np.where(condition2, result2, 0) + np.where(condition1, result1, 0)
+    return x
 
 
 def highlights_black_areas(image: np.ndarray, thresh_value: int) -> np.ndarray:
