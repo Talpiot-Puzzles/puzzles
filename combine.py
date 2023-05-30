@@ -85,7 +85,7 @@ def load_image(path):
     return img
 
 
-def load_images(shifted_images: list[tuple[str, tuple[int, int, int]]]):
+def load_images(shifted_images: List[Tuple[str, Tuple[int, int, int]]]):
     """
     Read a list of image paths and return a list of corresponding images.
 
@@ -96,7 +96,7 @@ def load_images(shifted_images: list[tuple[str, tuple[int, int, int]]]):
     return [(load_image(path), *rest) for path, *rest in shifted_images]
 
 
-def white_is_most_important(overlap_img: list[list[list[int]]]):
+def white_is_most_important(overlap_img: List[List[List[int]]]):
     # If this is the best algo could to optimize run time and cancel the overlap array
     result = np.zeros((len(overlap_img), len(overlap_img[0])), dtype=np.int32)
     for i in range(len(overlap_img)):
@@ -120,8 +120,7 @@ def get_white(pixel: list):
         return list_mean(filtered)
     return list_mean(pixel)
 
-
-def kernel_mean(overlap_img: list[list[list[int]]], kernel_size: int = 3):
+def kernel_mean(overlap_img: List[List[List[int]]], kernel_size: int = 3):
     result = np.zeros((len(overlap_img), len(overlap_img[0])), dtype=np.int32)
     for i in tqdm(range(len(overlap_img))):
         for j in range(len(overlap_img[i])):
@@ -135,14 +134,12 @@ def kernel_mean(overlap_img: list[list[list[int]]], kernel_size: int = 3):
     combine_img = combine_img.convert('RGB')
     return combine_img
 
-
-def list_mean(lst: list[int]):
+def list_mean(lst: List[int]):
     if len(lst) == 0:
         return 0
     return int(np.ceil((sum(lst) / len(lst))))
 
-
-def simple_mean(overlap_img: list[list[list[int]]]) -> Image.Image:
+def simple_mean(overlap_img: List[List[List[int]]]) -> Image.Image:
     combine_mean = []
 
     for inner_list in tqdm(overlap_img):
@@ -195,8 +192,7 @@ def split_pixels(img: np.ndarray, split_factor: int) -> np.ndarray:
             new_array[i * split_factor:(i + 1) * split_factor, j * split_factor:(j + 1) * split_factor] = img[i, j]
     return new_array
 
-
-def rotate_image(image: np.ndarray, angle_deg: float) -> tuple[np.ndarray, tuple[int, int]]:
+def rotate_image(image: np.ndarray, angle_deg: float) -> Tuple[np.ndarray, Tuple[int, int]]:
     """
     Rotates an image by the specified angle in degree.
 
@@ -249,9 +245,7 @@ def rotate_image(image: np.ndarray, angle_deg: float) -> tuple[np.ndarray, tuple
     # im_array.save('gfg_dummy_pic.png')
     return rotated_image, rotated_position
 
-
-def split_and_update_shift(shifted_image: tuple[np.ndarray, tuple[float, float, float]], split_factor: int) -> tuple[
-    np.ndarray, tuple[int, int, float]]:
+def split_and_update_shift(shifted_image: Tuple[np.ndarray, Tuple[float, float, float]], split_factor: int) -> Tuple[np.ndarray, Tuple[int, int, float]]:
     """
     Splits the image into smaller pixels and updates the shift accordingly.
 
@@ -307,9 +301,7 @@ def calculate_combined_size(combine_min, combine_max, shift, image):
     combine_min['y'] = min(combine_min['y'], min_y)
     combine_max['y'] = max(combine_max['y'], max_y)
 
-
-def preprocess_combine(shifted_images: list[tuple[np.ndarray, tuple[float, float, float]]]) -> tuple[
-    dict[str, int], tuple[int, int], list[tuple[np.ndarray, tuple[int, int]]]]:
+def preprocess_combine(shifted_images: List[Tuple[np.ndarray, Tuple[float, float, float]]]) -> Tuple[Dict[str, int], Tuple[int, int], List[Tuple[np.ndarray, Tuple[int, int]]]]:
     """
     Preprocesses the shifted images for combining by performing the necessary steps.
 
@@ -365,9 +357,7 @@ def preprocess_combine(shifted_images: list[tuple[np.ndarray, tuple[float, float
 
     return m_image_position, combine_size, update_shifted_images
 
-
-def append_to_combine_img(x: int, y: int, combined_overlap: list[list[list[int]]], image: np.ndarray,
-                          shape: tuple[int, int]) -> None:
+def append_to_combine_img(x: int, y: int, combined_overlap: List[List[List[int]]], image: np.ndarray, shape: Tuple[int, int]) -> None:
     """
     Appends the pixel values of an image to the corresponding location in the combined overlap image.
 
@@ -397,8 +387,7 @@ def append_to_combine_img(x: int, y: int, combined_overlap: list[list[list[int]]
                 print("WARNING: Should solve wrong calculation issue")
                 break
 
-
-def calculate_position_in_combine_image(shift: tuple[int, int], m_image_position: dict[str, int]) -> tuple[int, int]:
+def calculate_position_in_combine_image(shift: Tuple[int, int], m_image_position: Dict[str, int]) -> Tuple[int, int]:
     """
     Calculates the position of an image in the combined image based on its shift values and the mother image position.
 
@@ -418,9 +407,7 @@ def calculate_position_in_combine_image(shift: tuple[int, int], m_image_position
     y += m_image_position['y']
     return x, y
 
-
-def combine(m_image_position: dict[str, int], combine_size: tuple[int, int],
-            update_shifted_images: list[tuple[np.ndarray, tuple[int, int, int]]]) -> np.ndarray:
+def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int], update_shifted_images: List[Tuple[np.ndarray, Tuple[int, int, int]]]) -> np.ndarray:
     """
     Combines the shifted images into a single combined image.
 
@@ -454,8 +441,7 @@ def combine(m_image_position: dict[str, int], combine_size: tuple[int, int],
     print("### End combine ...")
     return combined_image
 
-
-def smart_combine_images(shifted_images: list[tuple[Image.Image, tuple[float, float, float]]]) -> Image.Image:
+def smart_combine_images(shifted_images: List[Tuple[Image.Image, Tuple[float, float, float]]]) -> Image.Image:
     """
     Combines a list of shifted images into a single combined image.
 

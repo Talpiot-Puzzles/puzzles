@@ -69,6 +69,6 @@ def detect_anchors(images):
 
 
 if __name__ == '__main__':
-    paths = ['images/1.jpg', 'images/2.jpg', 'images/3.jpg']
+    paths = ['imgs/1.jpg', 'imgs/2.jpg', 'imgs/3.jpg']
     images = [cv2.imread(path)[..., ::-1] for path in paths]
     res = detect_anchors(images)
