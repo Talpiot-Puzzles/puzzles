@@ -5,6 +5,14 @@ from PIL import Image
 from scipy.signal import convolve2d
 from tqdm import tqdm
 
+
+def unite_sigmoid(x, upper_width=20, lower_width=30, meanval=127.5):
+    # if x <= meanval:
+    #     return 255 * (1 / (1 + np.exp((meanval - x) / lower_width)))
+    # if x > meanval:
+        return 255 * (1 / (1 + np.exp((meanval - x) / upper_width)))
+
+
 def highlights_black_areas(image: np.ndarray, thresh_value: int) -> np.ndarray:
     """
     This function highlights the hot areas in the input image by performing a
@@ -24,6 +32,7 @@ def highlights_black_areas(image: np.ndarray, thresh_value: int) -> np.ndarray:
     # Convert the inverted thresholded image back to a PIL Image object
     highlighted_image = Image.fromarray(inv_thresh_img)
     return highlighted_image
+
 
 def highlights_hot_areas(image: Image.Image, thresh_value: int = 150) -> Image.Image:
     """
@@ -53,6 +62,7 @@ def highlights_hot_areas(image: Image.Image, thresh_value: int = 150) -> Image.I
     highlighted_image = Image.fromarray(inv_thresh_img)
     return highlighted_image
 
+
 def apply_mean_filter(image: np.ndarray, overlap_size: int) -> np.ndarray:
     """
     Apply a 3x3 mean filter to the overlapping region of an image.
@@ -67,11 +77,13 @@ def apply_mean_filter(image: np.ndarray, overlap_size: int) -> np.ndarray:
     )
     return filtered_image.astype(np.uint8)
 
+
 def load_image(path):
     # load the images using cv2
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
 
     return img
+
 
 def load_images(shifted_images: list[tuple[str, tuple[int, int, int]]]):
     """
@@ -83,13 +95,14 @@ def load_images(shifted_images: list[tuple[str, tuple[int, int, int]]]):
     print("### Load the image to the shifted_images ...")
     return [(load_image(path), *rest) for path, *rest in shifted_images]
 
+
 def white_is_most_important(overlap_img: list[list[list[int]]]):
     # If this is the best algo could to optimize run time and cancel the overlap array
     result = np.zeros((len(overlap_img), len(overlap_img[0])), dtype=np.int32)
     for i in range(len(overlap_img)):
         for j in range(len(overlap_img[i])):
             if len(overlap_img[i][j]) == 0:
-                #Not should to be when fix width calc problem
+                # Not should to be when fix width calc problem
                 result[i][j] = 0
             else:
                 result[i][j] = max(overlap_img[i][j])
@@ -98,32 +111,36 @@ def white_is_most_important(overlap_img: list[list[list[int]]]):
     combine_img = combine_img.convert('RGB')
     return combine_img
 
+
 def get_white(pixel: list):
-    thresh_factor = 100
+    thresh_factor = 150
     # Comment out for get also black pixel
     filtered = list(filter(lambda a: a > thresh_factor, pixel))
-    if len(filtered) > 0:#len(pixel):
+    if len(filtered) > 0:  # len(pixel):
         return list_mean(filtered)
     return list_mean(pixel)
 
+
 def kernel_mean(overlap_img: list[list[list[int]]], kernel_size: int = 3):
     result = np.zeros((len(overlap_img), len(overlap_img[0])), dtype=np.int32)
-    for i in range(len(overlap_img)):
+    for i in tqdm(range(len(overlap_img))):
         for j in range(len(overlap_img[i])):
             kernel_sum = []
             for k in range(0, kernel_size):
                 for x in range(max(0, i - k), min(len(overlap_img) - 1, i + k)):
                     for y in range(max(0, j - k), min(len(overlap_img[x]) - 1, j + k)):
                         kernel_sum.extend(overlap_img[x][y])
-            result[i][j] = get_white(kernel_sum) #list_mean(kernel_sum)
+            result[i][j] = get_white(kernel_sum)  # list_mean(kernel_sum)
     combine_img = Image.fromarray(result)
     combine_img = combine_img.convert('RGB')
     return combine_img
+
 
 def list_mean(lst: list[int]):
     if len(lst) == 0:
         return 0
     return int(np.ceil((sum(lst) / len(lst))))
+
 
 def simple_mean(overlap_img: list[list[list[int]]]) -> Image.Image:
     combine_mean = []
@@ -144,6 +161,7 @@ def simple_mean(overlap_img: list[list[list[int]]]) -> Image.Image:
     combine_img = Image.fromarray(combine_mean)
     combine_img = combine_img.convert('RGB')
     return combine_img
+
 
 # Preprocess functions:
 def split_pixels(img: np.ndarray, split_factor: int) -> np.ndarray:
@@ -174,8 +192,9 @@ def split_pixels(img: np.ndarray, split_factor: int) -> np.ndarray:
     # Copy the pixels from the original image to the new image, splitting each pixel into smaller pixels
     for i in range(height):
         for j in range(width):
-            new_array[i*split_factor:(i+1)*split_factor, j*split_factor:(j+1)*split_factor] = img[i, j]
+            new_array[i * split_factor:(i + 1) * split_factor, j * split_factor:(j + 1) * split_factor] = img[i, j]
     return new_array
+
 
 def rotate_image(image: np.ndarray, angle_deg: float) -> tuple[np.ndarray, tuple[int, int]]:
     """
@@ -230,7 +249,9 @@ def rotate_image(image: np.ndarray, angle_deg: float) -> tuple[np.ndarray, tuple
     # im_array.save('gfg_dummy_pic.png')
     return rotated_image, rotated_position
 
-def split_and_update_shift(shifted_image: tuple[np.ndarray, tuple[float, float, float]], split_factor: int) -> tuple[np.ndarray, tuple[int, int, float]]:
+
+def split_and_update_shift(shifted_image: tuple[np.ndarray, tuple[float, float, float]], split_factor: int) -> tuple[
+    np.ndarray, tuple[int, int, float]]:
     """
     Splits the image into smaller pixels and updates the shift accordingly.
 
@@ -255,6 +276,7 @@ def split_and_update_shift(shifted_image: tuple[np.ndarray, tuple[float, float, 
 
     return image, updated_shift
 
+
 def calculate_vertices(upper_left, height, width):
     # upper right vertex
     upper_right = (upper_left[0] + width, upper_left[1])
@@ -274,6 +296,7 @@ def find_min_max_coordinates(corners):
     max_y = max(y_values)
     return min_x, max_x, min_y, max_y
 
+
 def calculate_combined_size(combine_min, combine_max, shift, image):
     image_height, image_width = image.shape[:2]
     # TODO: do more efficiently calculate of min_x, max_x, min_y, max_y
@@ -284,7 +307,9 @@ def calculate_combined_size(combine_min, combine_max, shift, image):
     combine_min['y'] = min(combine_min['y'], min_y)
     combine_max['y'] = max(combine_max['y'], max_y)
 
-def preprocess_combine(shifted_images: list[tuple[np.ndarray, tuple[float, float, float]]]) -> tuple[dict[str, int], tuple[int, int], list[tuple[np.ndarray, tuple[int, int]]]]:
+
+def preprocess_combine(shifted_images: list[tuple[np.ndarray, tuple[float, float, float]]]) -> tuple[
+    dict[str, int], tuple[int, int], list[tuple[np.ndarray, tuple[int, int]]]]:
     """
     Preprocesses the shifted images for combining by performing the necessary steps.
 
@@ -311,7 +336,7 @@ def preprocess_combine(shifted_images: list[tuple[np.ndarray, tuple[float, float
     print("### Start preprocesses combine ...")
 
     for shifted_image in tqdm(shifted_images):
-        split_factor = 2
+        split_factor = 3
 
         # Step 1 - split pixels:
         update_shifted_image = split_and_update_shift(shifted_image, split_factor)
@@ -340,7 +365,9 @@ def preprocess_combine(shifted_images: list[tuple[np.ndarray, tuple[float, float
 
     return m_image_position, combine_size, update_shifted_images
 
-def append_to_combine_img(x: int, y: int, combined_overlap: list[list[list[int]]], image: np.ndarray, shape: tuple[int, int]) -> None:
+
+def append_to_combine_img(x: int, y: int, combined_overlap: list[list[list[int]]], image: np.ndarray,
+                          shape: tuple[int, int]) -> None:
     """
     Appends the pixel values of an image to the corresponding location in the combined overlap image.
 
@@ -360,7 +387,7 @@ def append_to_combine_img(x: int, y: int, combined_overlap: list[list[list[int]]
 
     combine_img_h, combine_img_w = shape
     image_h, image_w = image.shape[0], image.shape[1]
-
+    image = unite_sigmoid(image)
     for i in range(image_h):
         for j in range(image_w):
             if 0 <= y + i < combine_img_h and 0 <= x + j < combine_img_w:
@@ -369,6 +396,7 @@ def append_to_combine_img(x: int, y: int, combined_overlap: list[list[list[int]]
             else:
                 print("WARNING: Should solve wrong calculation issue")
                 break
+
 
 def calculate_position_in_combine_image(shift: tuple[int, int], m_image_position: dict[str, int]) -> tuple[int, int]:
     """
@@ -390,7 +418,9 @@ def calculate_position_in_combine_image(shift: tuple[int, int], m_image_position
     y += m_image_position['y']
     return x, y
 
-def combine(m_image_position: dict[str, int], combine_size: tuple[int, int], update_shifted_images: list[tuple[np.ndarray, tuple[int, int, int]]]) -> np.ndarray:
+
+def combine(m_image_position: dict[str, int], combine_size: tuple[int, int],
+            update_shifted_images: list[tuple[np.ndarray, tuple[int, int, int]]]) -> np.ndarray:
     """
     Combines the shifted images into a single combined image.
 
@@ -419,10 +449,11 @@ def combine(m_image_position: dict[str, int], combine_size: tuple[int, int], upd
     print("### Combine overlap array ... ")
     # TODO: Implement the more method for combining the overlapping pixels
     combined_image = simple_mean(combined_overlap)
-    # combined_image = kernel_mean(combined_overlap, kernel_size=3)
+    # combined_image = kernel_mean(combined_overlap, kernel_size=2)
     # combined_image = white_is_most_important(combined_overlap)
     print("### End combine ...")
     return combined_image
+
 
 def smart_combine_images(shifted_images: list[tuple[Image.Image, tuple[float, float, float]]]) -> Image.Image:
     """
@@ -451,7 +482,6 @@ def smart_combine_images(shifted_images: list[tuple[Image.Image, tuple[float, fl
     return combined_image
 
 
-
 # Todo - list:
 # 1. Add more function
 # 2. Fix wight problem
@@ -476,6 +506,7 @@ def main():
     # cv2.imshow('Transofrm', merged)
     # merged = Image.fromarray(merged)
     merged.save("merged.jpg")
+
 
 if __name__ == "__main__":
     main()
