@@ -1,61 +1,93 @@
+import os
+import traceback
+
+import cv2
+from PIL import Image
+
+import anchor_detection
+import combine
+import plain_transform
+
+
 class Pipeline:
     def __init__(self, steps, pipeline_input=None):
-        self.accessible_data = None
+        self.accessible_data = {}
         self.pipeline_input = pipeline_input
         self.steps = steps
 
     def run(self):
         # Run the pipeline steps in sequence
-        data = pipeline_input
+        data = self.pipeline_input
         for step_name, step_func in self.steps:
             try:
-                data = step_func(data)
+                data = step_func(data, self.accessible_data)
             except Exception as e:
-                print(f"Error running step '{step_name}': {str(e)}")
-                break
+                traceback.format_exc()
+                raise ValueError(f"Error running step '{step_name}': {str(e)}")
+            print(f"successfully run '{step_name}'")
         return data
 
 
-# Step 1: Load images from database
-def load_images(image_dir):
-    image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(".jpg")]
-    images = [cv2.imread(path) for path in image_paths]
+# Step 1: Load images from directory
+def load_images(image_dir, pipeline_data):
+    image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(".png")]
+    image_paths = [image_paths[i] for i in [220, 180]]
+    images = [cv2.imread(path)[..., ::-1] for path in image_paths]
+    # print(len(images))
+    # for img in images:
+    #     plt.imshow(img)
+    #     plt.show()
+    for i, img in enumerate(images):
+        Image.fromarray(img).save(f"img{i}.jpg")
+    pipeline_data['images'] = images
     return images
 
 
 # Step 2: Preprocess images
-def preprocess_images(images):
-    preprocessed_images = [preprocess_image(image) for image in images]
-    return preprocessed_images
+def preprocess_images(images, pipeline_data):
+    return images
+    # preprocessed_images = [preprocess_image(image) for image in images]
+    # return preprocessed_images
 
 
 # Step 3: Anchor detection
-def detect_anchors(preprocessed_images):
-    anchors = detect_anchors_from_images(preprocessed_images)
-    return anchors
+def detect_anchors(preprocessed_images, pipeline_data):
+    return anchor_detection.detect_anchors(preprocessed_images)
 
 
 # Step 4: Connect images
-def connect_images(anchors):
-    connected_images = connect_images_from_anchors(anchors)
-    return connected_images
+def connect_images(anchors, pipeline_data):
+    to_use = [[anchors[i], anchors[i + 1]] for i in range(0, len(anchors) - 1, 2)]
+    return plain_transform.plain_transform(to_use)
+    # connected_images = connect_images_from_anchors(anchors)
+    # return connected_images
 
 
 # Step 5: Shift images
-def shift_images(connected_images):
-    shifted_images = focus_by_lower_plane(connected_images)
+def shift_images(shifts, pipeline_data):
+    shifted_images = shifts
+    # # Todo rotate images in advance
+    # shifts_only = [el[:2] for el in shifts]
+    # # TODO iterate over h2 options
+    # return plain_movement.refocuse_multipule_images(shifts_only, plain_movement.H1 + plain_movement.H2, plain_movement.H2)
+    # shifted_images = focus_by_lower_plane(shifts)
     return shifted_images
 
 
 # Step 6: Combine images
-def combine_images(shifted_images):
-    combined_image = smart_combine_images(shifted_images)
+def combine_images(shifted_images, pipeline_data):
+    print(shifted_images)
+    images = pipeline_data['images']
+    shifted_images = [(images[0], (0, 0, 0)), (images[1], (shifted_images[0][0], shifted_images[0][1], 0))]
+    combined_image = combine.smart_combine_images(shifted_images)
+    merged = Image.fromarray(combined_image)
+    merged.save("combined.jpg")
     return combined_image
 
 
 # Step 7: Object detection
 def detect_objects(combined_image):
-    labeled_image = detect_objects_in_image(combined_image)
+    labeled_image = detect_objects_in_image(combined_image, images)
     return labeled_image
 
 
@@ -91,7 +123,10 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
     return Pipeline(steps, pipeline_input)
 
 
-# Example usage
-input_data = '/path/to/image/directory'
-p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
-output_data = p.run()
+if __name__ == '__main__':
+    # Example usage
+    input_data = r'C:\Users\t9146472\Documents\DJI_0004_T__30_H_5_MS'
+    # p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
+    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
+    output_data = p.run()
+    print(output_data)

@@ -59,7 +59,7 @@ def _prepare_images_to_draw(kps, chosen):
 
 
 def detect_anchors(images):
-    descs, kps = _get_anchors_in_all_images(images)
+    kps, descs = _get_anchors_in_all_images(images)
     matches = _get_all_matches(descs)
     good_points = _get_good_points(matches)
     good_points = _filter_by_max_amount(good_points)
@@ -69,6 +69,6 @@ def detect_anchors(images):
 
 
 if __name__ == '__main__':
-    paths = []
+    paths = ['images/1.jpg', 'images/2.jpg', 'images/3.jpg']
     images = [cv2.imread(path)[..., ::-1] for path in paths]
     res = detect_anchors(images)
