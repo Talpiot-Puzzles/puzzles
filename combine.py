@@ -144,7 +144,17 @@ def list_mean(lst: List[int]):
         return 0
     return int(np.ceil((sum(lst) / len(lst))))
 
-def simple_mean(overlap_img: List[List[List[int]]]) -> Image.Image:
+
+def simple_mean(overlap_img):
+    overlap_img = np.array(overlap_img)
+    counter = (overlap_img != -1).sum(axis=-1)
+    summed = overlap_img.sum(axis=-1) + counter
+    res = summed / overlap_img.shape[-1]
+
+    return Image.fromarray(res).convert('RGB')
+
+
+def simple_mean2(overlap_img: List[List[List[int]]]) -> Image.Image:
     combine_mean = []
 
     for inner_list in tqdm(overlap_img):
@@ -337,7 +347,7 @@ def preprocess_combine(shifted_images: List[Tuple[np.ndarray, Tuple[float, float
     print("### Start preprocesses combine ...")
 
     for shifted_image in tqdm(shifted_images):
-        split_factor = 1
+        split_factor = 3
 
         # Step 1 - split pixels:
         update_shifted_image = split_and_update_shift(shifted_image, split_factor)
@@ -367,8 +377,8 @@ def preprocess_combine(shifted_images: List[Tuple[np.ndarray, Tuple[float, float
     return m_image_position, combine_size, update_shifted_images
 
 
-def append_to_combine_img(x: int, y: int, combined_overlap: List[List[List[int]]], image: np.ndarray,
-                          shape: Tuple[int, int]) -> None:
+def append_to_combine_img(x: int, y: int, combined_overlap: np.ndarray, image: np.ndarray,
+                          shape: Tuple[int, int], index) -> None:
     """
     Appends the pixel values of an image to the corresponding location in the combined overlap image.
 
@@ -389,14 +399,28 @@ def append_to_combine_img(x: int, y: int, combined_overlap: List[List[List[int]]
     combine_img_h, combine_img_w = shape
     image_h, image_w = image.shape[0], image.shape[1]
     image = unite_sigmoid(image)
-    for i in range(image_h):
-        for j in range(image_w):
-            if 0 <= y + i < combine_img_h and 0 <= x + j < combine_img_w:
-                # TODO: Add sigmoid function here on image[i, j]
-                combined_overlap[y + i][x + j].append(image[i, j])
-            else:
-                print("WARNING: Should solve wrong calculation issue")
-                break
+
+    # for i in [*range(-y, 0), *range(image_h, combine_img_h - y)]:
+    #     for j in range(combine_img_w):
+    #         combined_overlap[y + i][j].append(-1)
+    #
+    #
+    # for j in [*range(-x, 0), *range(image_w, combine_img_w - x)]:
+    #     for i in range(image_h):
+    #         combined_overlap[y + i][x + j].append(-1)
+
+    combined_overlap[y:y+image_h, x:x+image_w, index] = image
+
+
+    # for i in range(image_h):
+    #     for j in range(image_w):
+    #         if 0 <= y + i < combine_img_h and 0 <= x + j < combine_img_w:
+    #             # TODO: Add sigmoid function here on image[i, j]
+    #             combined_overlap[y + i][x + j].append(image[i, j])
+    #         else:
+    #             # combined_overlap[y + i][x + j].append(-1)
+    #             print("WARNING: Should solve wrong calculation issue")
+    #             break
 
 
 def calculate_position_in_combine_image(shift: Tuple[int, int], m_image_position: Dict[str, int]) -> Tuple[int, int]:
@@ -441,11 +465,13 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
 
     print("### Create overlap array ... ")
     # Create an empty array to hold the combined image
-    combined_overlap = [[[] for _ in range(combined_width)] for _ in range(combined_height)]
+    # combined_overlap = [[[] for _ in range(combined_width)] for _ in range(combined_height)]
+    combined_overlap = -1 * np.ones(shape=(combined_height, combined_width, len(update_shifted_images)))
     # Combine the images by pasting them into the empty array
-    for image, shift in tqdm(update_shifted_images):
+    for i, (image, shift) in tqdm(enumerate(update_shifted_images)):
         x, y = calculate_position_in_combine_image(shift, m_image_position)
-        append_to_combine_img(x, y, combined_overlap, image, (combined_height, combined_width))
+        combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = unite_sigmoid(image)
+        # append_to_combine_img(x, y, combined_overlap, image, (combined_height, combined_width), i)
 
     print("### Combine overlap array ... ")
     # TODO: Implement the more method for combining the overlapping pixels
