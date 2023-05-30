@@ -23,20 +23,21 @@ class Pipeline:
         # Run the pipeline steps in sequence
         data = self.pipeline_input
         for step_name, step_func in self.steps:
-            try:
-                data = step_func(data, self.accessible_data)
-            except Exception as e:
-                traceback.format_exc()
-                raise ValueError(f"Error running step '{step_name}': {str(e)}")
+            data = step_func(data, self.accessible_data)
+            # try:
+            #     data = step_func(data, self.accessible_data)
+            # except Exception as e:
+            #     traceback.format_exc()
+            #     raise ValueError(f"Error running step '{step_name}': {str(e)}")
             print(f"successfully run '{step_name}'")
         return data
 
 
 # Step 1: Load images from directory
 def load_images(image_dir, pipeline_data):
-    image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(".png")]
-    image_paths = [image_paths[i] for i in [220, 180]]
-    images = [cv2.imread(path)[..., ::-1] for path in image_paths]
+    image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(".png") or f.endswith('.jpg')]
+    # image_paths = [image_paths[i] for i in [220, 180]]
+    images = [cv2.imread(path, cv2.IMREAD_GRAYSCALE) for path in image_paths]
     # print(len(images))
     # for img in images:
     #     plt.imshow(img)
@@ -88,8 +89,8 @@ def combine_images(shifted_images, pipeline_data):
     shifted_images = [(images[0], (0, 0, 0)), (images[1], (shifted_images[0][0], shifted_images[0][1], 0))]
     combined_image = combine.smart_combine_images(shifted_images)
 
-    merged = Image.fromarray(combined_image)
-    merged.save("combined.jpg")
+    # merged = Image.fromarray(combined_image)
+    combined_image.save("combined.jpg")
     return combined_image
 
 
@@ -133,7 +134,7 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
 
 if __name__ == '__main__':
     # Example usage
-    input_data = r'./imgs'
+    input_data = r'imgs'
     p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
     # p = make_pipeline(start_step='load_images', end_step='detect_anchors', pipeline_input=input_data)
     output_data = p.run()
