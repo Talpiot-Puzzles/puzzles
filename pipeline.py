@@ -4,6 +4,10 @@ import traceback
 import cv2
 from PIL import Image
 
+import numpy as np
+from matplotlib import pyplot as plt
+
+
 import anchor_detection
 import combine
 import plain_transform
@@ -45,6 +49,9 @@ def load_images(image_dir, pipeline_data):
 
 # Step 2: Preprocess images
 def preprocess_images(images, pipeline_data):
+    fig, ax = plt.subplots(1, len(images))
+    for i in range(len(images)):
+        ax[i].imshow(images[i])
     return images
     # preprocessed_images = [preprocess_image(image) for image in images]
     # return preprocessed_images
@@ -80,6 +87,7 @@ def combine_images(shifted_images, pipeline_data):
     images = pipeline_data['images']
     shifted_images = [(images[0], (0, 0, 0)), (images[1], (shifted_images[0][0], shifted_images[0][1], 0))]
     combined_image = combine.smart_combine_images(shifted_images)
+
     merged = Image.fromarray(combined_image)
     merged.save("combined.jpg")
     return combined_image
@@ -125,8 +133,21 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
 
 if __name__ == '__main__':
     # Example usage
-    input_data = r'C:\Users\t9146472\Documents\DJI_0004_T__30_H_5_MS'
-    # p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
+    input_data = r'./imgs'
     p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
+    # p = make_pipeline(start_step='load_images', end_step='detect_anchors', pipeline_input=input_data)
     output_data = p.run()
+    # images = p.accessible_data['images']
+    # res = [images[0], *(2 * [images[i] for i in range(1, len(images) - 1)]), images[-1]]
+    # res = [np.array(el) for el in res]
+    #
+    # for i, img in enumerate(res):
+    #     for point in output_data[i]:
+    #         res[i] = cv2.circle(img, [int(el) for el in point], 100, (255, 0, 0))
+    #
+    # fig, ax = plt.subplots(1, len(res))
+    # for i in range(len(res)):
+    #     ax[i].imshow(res[i])
+    #
+    # plt.show()
     print(output_data)
