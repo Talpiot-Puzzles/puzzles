@@ -146,7 +146,16 @@ def list_mean(lst: List[int]):
     return int(np.ceil((sum(lst) / len(lst))))
 
 
-def simple_mean(overlap_img: List[List[List[int]]]) -> Image.Image:
+def simple_mean(overlap_img):
+    overlap_img = np.array(overlap_img)
+    counter = (overlap_img != -1).sum(axis=-1)
+    summed = overlap_img.sum(axis=-1) + counter
+    res = summed / overlap_img.shape[-1]
+
+    return Image.fromarray(res).convert('RGB')
+
+
+def simple_mean2(overlap_img: List[List[List[int]]]) -> Image.Image:
     combine_mean = []
 
     for inner_list in tqdm(overlap_img):
@@ -392,12 +401,24 @@ def append_to_combine_img(x: int, y: int, combined_overlap: List[List[List[int]]
     combine_img_h, combine_img_w = shape
     image_h, image_w = image.shape[0], image.shape[1]
     image = unite_sigmoid(image)
+
+    for i in [*range(-y, 0), *range(image_h, combine_img_h - y)]:
+        for j in range(combine_img_w):
+            combined_overlap[y + i][j].append(-1)
+
+
+    for j in [*range(-x, 0), *range(image_w, combine_img_w - x)]:
+        for i in range(image_h):
+            combined_overlap[y + i][x + j].append(-1)
+
+
     for i in range(image_h):
         for j in range(image_w):
             if 0 <= y + i < combine_img_h and 0 <= x + j < combine_img_w:
                 # TODO: Add sigmoid function here on image[i, j]
                 combined_overlap[y + i][x + j].append(image[i, j])
             else:
+                # combined_overlap[y + i][x + j].append(-1)
                 print("WARNING: Should solve wrong calculation issue")
                 break
 
