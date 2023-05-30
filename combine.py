@@ -364,6 +364,7 @@ def append_to_combine_img(x: int, y: int, combined_overlap: list[list[list[int]]
     for i in range(image_h):
         for j in range(image_w):
             if 0 <= y + i < combine_img_h and 0 <= x + j < combine_img_w:
+                # TODO: Add sigmoid function here on image[i, j]
                 combined_overlap[y + i][x + j].append(image[i, j])
             else:
                 print("WARNING: Should solve wrong calculation issue")
@@ -418,8 +419,8 @@ def combine(m_image_position: dict[str, int], combine_size: tuple[int, int], upd
     print("### Combine overlap array ... ")
     # TODO: Implement the more method for combining the overlapping pixels
     # combined_image = simple_mean(combined_overlap)
-    combined_image = kernel_mean(combined_overlap, kernel_size=3)
-    # combined_image = white_is_most_important(combined_overlap)
+    # combined_image = kernel_mean(combined_overlap, kernel_size=3)
+    combined_image = white_is_most_important(combined_overlap)
     print("### End combine ...")
     return combined_image
 
@@ -445,7 +446,7 @@ def smart_combine_images(shifted_images: list[tuple[Image.Image, tuple[float, fl
     m_image_position, combine_size, update_shifted_images = preprocess_combine(shifted_images)
     combined_image = combine(m_image_position, combine_size, update_shifted_images)
     # Make transform to get highlights on the hot areas
-    # combined_image = highlights_hot_areas(combined_image, 100)
+    # combined_image = highlights_hot_areas(combined_image, 50)
     # combined_image = highlights_black_areas(combined_image, 100)
     return combined_image
 
@@ -464,13 +465,13 @@ def main():
     # img2 = cv2.imread("./Test/22.jpg", cv2.IMREAD_GRAYSCALE)
     # img3 = cv2.imread("./Test/22.jpg", cv2.IMREAD_GRAYSCALE)
     imt1 = ("Test/21.jpg", (0, 0, 0))
-    imt2 = ("Test/22.jpg", (232, 0, 0))#232, 0
-    # imt2 = ("Test/22.jpg", (232, 1, -1))  # 232, 0
-    # imt3 = ("Test/22.jpg", (232.65, -10.3, 0))  # 232, 0
+    # imt2 = ("Test/22.jpg", (232, 0, 0))#232, 0
+    imt2 = ("Test/22.jpg", (232, 1, -1))  # 232, 0
+    imt3 = ("Test/22.jpg", (232.65, -10.3, 0))  # 232, 0
     # imt2 = ("Test/22.jpg", (232, 0, 0))
     shifted_images.append(imt1)
     shifted_images.append(imt2)
-    # shifted_images.append(imt3)
+    shifted_images.append(imt3)
     merged = smart_combine_images(shifted_images)
     # cv2.imshow('Transofrm', merged)
     # merged = Image.fromarray(merged)
