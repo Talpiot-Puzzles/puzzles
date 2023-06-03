@@ -146,7 +146,7 @@ def list_mean(lst: List[int]):
 
 
 def simple_mean(overlap_img):
-    overlap_img = np.array(overlap_img)
+    # overlap_img = np.array(overlap_img)
     counter = (overlap_img == 0).sum(axis=-1)
     summed = overlap_img.sum(axis=-1) + counter
     res = summed / (overlap_img.shape[-1] - counter)
@@ -470,11 +470,21 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     # Create an empty array to hold the combined image
     # combined_overlap = [[[] for _ in range(combined_width)] for _ in range(combined_height)]
     # combined_overlap = -1 * np.ones(shape=(combined_height, combined_width, len(update_shifted_images)))
-    combined_overlap = np.zeros(shape=(combined_height, combined_width, len(update_shifted_images)))
+    # combined_overlap = np.zeros(shape=(combined_height, combined_width, len(update_shifted_images)))
+    combined_overlap = np.memmap("temp.dat", dtype=np.float32, mode='w+', shape=(combined_height, combined_width, len(update_shifted_images)))
     # Combine the images by pasting them into the empty array
+
+    # x0s, y0s = zip(*[calculate_position_in_combine_image(shift, m_image_position) for image, shift in tqdm(update_shifted_images)])
+    # images, shift = zip(*update_shifted_images)
+    # x1s = [el + image.shape[0] for el, image in zip(x0s, images)]
+    # y1s = [el + image.shape[1] for el, image in zip(y0s, images)]
+    #
+    # indices = np.array([np.stack(np.meshgrid(np.linspace(x0, x1 - 1, (x1 - x0)).astype(np.int32), np.linspace(y0, y1 - 1, (y1 - y0)).astype(np.int32))) for x0, x1, y0, y1 in zip(x0s, x1s, y0s, y1s)])
+    # np.put_along_axis(combined_overlap, indices, images, axis=-1)
     for i, (image, shift) in tqdm(enumerate(update_shifted_images)):
         x, y = calculate_position_in_combine_image(shift, m_image_position)
-        combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = unite_sigmoid(image)
+        # combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = unite_sigmoid(image)
+        combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = image
         # append_to_combine_img(x, y, combined_overlap, image, (combined_height, combined_width), i)
 
     print("### Combine overlap array ... ")
