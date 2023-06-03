@@ -6,7 +6,6 @@ from PIL import Image
 
 import anchor_detection
 import combine
-import plain_movement
 import plain_transform
 
 
@@ -69,7 +68,8 @@ def load_images(input_data, pipeline_data):
 # Step 2: Preprocess images
 def preprocess_images(images, pipeline_data):
     height, width = images[0].shape
-    barrel_coef = -5.15e-5
+    filters = pipeline_data["filters"]
+    barrel_coef = filters["dist_coef"]
     distCoeff = np.array([[barrel_coef], [0], [0], [0]], dtype=np.float64)
     cam = np.eye(3, dtype=np.float32)
     cam[0, 2] = width / 2.0  # define center x
@@ -98,7 +98,6 @@ def preprocess_images(images, pipeline_data):
         img = middle_third
         return np.where(img == 0, 1, img)
 
-    filters = pipeline_data["filters"]
     preprocessed_images = images
     if filters["distortion"]:
         preprocessed_images = [undistort(image) for image in preprocessed_images]
@@ -121,16 +120,15 @@ def connect_images(anchors, pipeline_data):
 
 # Step 5: Shift images
 def shift_images(shifts, pipeline_data):
-    h_enkor = 40
-    h_ground = 40
-    dh = h_ground - h_enkor
+    h_anchor, h_ground = pipeline_data["heights"]["anchor"], pipeline_data["heights"]["ground"]
+    dh = h_ground - h_anchor
     refocused_shifts = []
     for tup in shifts:
         # print("tup", tup)
         (dx, dy, tet) = tup
-        refocse_x = -dh * dx / h_enkor
-        refocse_y = -dh * dy / h_enkor
-        refocused_shifts.append((dx + refocse_x, dy + refocse_y, tet))
+        refocuse_x = -dh * dx / h_anchor
+        refocuse_y = -dh * dy / h_anchor
+        refocused_shifts.append((dx + refocuse_x, dy + refocuse_y, tet))
     return refocused_shifts
 
 
@@ -187,6 +185,9 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessibl
 
 if __name__ == '__main__':
     # Example usage
+    dist_coef = -5.15e-5
+    anchor_height = ground_height = 40
+
     input_path = r'C:\Users\t9146472\Documents\DJI_0004_T.MP4'
     is_video = True
     start_time = (3 * 60 + 3)
@@ -197,8 +198,11 @@ if __name__ == '__main__':
 
     res_path = r".\res"
     input_data = {'path': input_path, "is_video": is_video, "start_time": start_time, "duration": duration}
-    accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter}, 'result': {'path': res_path, 'name': name}}
-    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data, accessible_data=accessible_data)
+    accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter, 'dist_coef': dist_coef},
+                       'result': {'path': res_path, 'name': name},
+                       'heights': {'anchor': anchor_height, 'ground': ground_height}}
+    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data,
+                      accessible_data=accessible_data)
     output_data = p.run()
     print(output_data)
 
@@ -216,4 +220,3 @@ if __name__ == '__main__':
     #     ax[i].imshow(res[i])
     #
     # plt.show()
-
