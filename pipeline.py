@@ -26,14 +26,20 @@ class Pipeline:
 
 
 # Step 1: Load images from directory
-def load_images(image_dir, pipeline_data):
-    image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if
-                   f.endswith(".png") or f.endswith('.jpg')]
-    # image_paths = [image_paths[i] for i in range(83, 85)]
-    image_paths = [image_paths[i] for i in range(230, 250)]
-    images = [cv2.imread(path, cv2.IMREAD_GRAYSCALE) for path in image_paths]
-    for i, img in enumerate(images):
-        Image.fromarray(img).save(f".\imgs\img{i}.jpg")
+def load_images(input_data, pipeline_data):
+    if not input_data["is_video"]:
+        image_dir = input_data["path"]
+        image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if
+                       f.endswith(".png") or f.endswith('.jpg')]
+        # image_paths = [image_paths[i] for i in range(83, 85)]
+        image_paths = [image_paths[i] for i in range(230, 250)]
+        images = [cv2.imread(path, cv2.IMREAD_GRAYSCALE) for path in image_paths]
+        for i, img in enumerate(images):
+            Image.fromarray(img).save(f".\imgs\img{i}.jpg")
+    else:
+        vidcap = cv2.VideoCapture(input_data['path'])
+        images = [cv2.cvtColor(vidcap.read()[1], cv2.COLOR_BGR2GRAY) for _ in range(80)]
+
     pipeline_data['images'] = images
     return images
 
@@ -152,7 +158,8 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
 if __name__ == '__main__':
     # Example usage
     # input_data = r'C:\Users\t9146472\Documents\name'
-    input_data = r'C:\Users\t9146472\Documents\DJI_04_310_320'
+    # input_data = {"path": r'C:\Users\t9146472\Documents\DJI_04_310_320', "is_video": False}
+    input_data = {'path': 'DJI_0603_T.MP4', "is_video": True}
     p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
     output_data = p.run()
     print(output_data)
