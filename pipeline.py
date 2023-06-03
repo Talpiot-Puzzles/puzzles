@@ -11,8 +11,8 @@ import plain_transform
 
 
 class Pipeline:
-    def __init__(self, steps, pipeline_input=None):
-        self.accessible_data = {}
+    def __init__(self, steps, pipeline_input=None, accessible_data=None):
+        self.accessible_data = accessible_data
         self.pipeline_input = pipeline_input
         self.steps = steps
 
@@ -23,6 +23,28 @@ class Pipeline:
             data = step_func(data, self.accessible_data)
             print(f"successfully run '{step_name}'")
         return data
+
+
+def capture_frames(path, start_time, duration):
+    vidcap = cv2.VideoCapture(path)
+    fps = vidcap.get(cv2.CAP_PROP_FPS)  # Get the frames per second (FPS) of the video
+    start_frame = int(start_time * fps)  # Calculate the start frame based on the start time
+    end_frame = int((start_time + duration) * fps)  # Calculate the end frame based on the start time and duration
+
+    # Set the initial frame to the start frame
+    vidcap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
+
+    images = []
+    for _ in range(start_frame, end_frame):
+        ret, frame = vidcap.read()
+        if ret:
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            images.append(gray_frame)
+        else:
+            break
+
+    vidcap.release()
+    return images
 
 
 # Step 1: Load images from directory
@@ -37,8 +59,8 @@ def load_images(input_data, pipeline_data):
         for i, img in enumerate(images):
             Image.fromarray(img).save(f".\imgs\img{i}.jpg")
     else:
-        vidcap = cv2.VideoCapture(input_data['path'])
-        images = [cv2.cvtColor(vidcap.read()[1], cv2.COLOR_BGR2GRAY) for _ in range(80)]
+        path, start_time, duration = input_data['path'], input_data["start_time"], input_data["duration"]
+        images = capture_frames(path, start_time, duration)
 
     pipeline_data['images'] = images
     return images
@@ -57,26 +79,33 @@ def preprocess_images(images, pipeline_data):
     # Compute the coordinate transform only once
     map1, map2 = cv2.initUndistortRectifyMap(cam, distCoeff, None, None, (width, height), cv2.CV_32FC1)
 
-    def preprocess_image(img):
+    def undistort(img):
         # Apply the coordinate transform using cv2.remap
         return cv2.remap(img, map1, map2, cv2.INTER_LINEAR)
 
-    preprocessed_images = [preprocess_image(image) for image in images]
+    def crop(img):
+        # Get the dimensions of the image
+        height, width = img.shape
+
+        # Calculate the boundaries for the middle third
+        start_row = height // 13
+        end_row = (height * 12) // 13
+        start_col = width // 13
+        end_col = (width * 12) // 13
+
+        # Extract the middle third of the image
+        middle_third = img[start_row:end_row, start_col:end_col]
+        img = middle_third
+        return np.where(img == 0, 1, img)
+
+    filters = pipeline_data["filters"]
+    preprocessed_images = images
+    if filters["distortion"]:
+        preprocessed_images = [undistort(image) for image in preprocessed_images]
+    if filters["crop"]:
+        preprocessed_images = [crop(image) for image in preprocessed_images]
+
     return preprocessed_images
-        # image = images[i]
-        # # Get the dimensions of the image
-        # height, width = image.shape
-        #
-        # # Calculate the boundaries for the middle third
-        # start_row = height // 4
-        # end_row = (height * 3) // 4
-        # start_col = width // 4
-        # end_col = (width * 3) // 4
-        #
-        # # Extract the middle third of the image
-        # middle_third = image[start_row:end_row, start_col:end_col]
-        # images[i] = middle_third
-        # images[i] = np.where(images[i] == 0, 1, images[i])
 
 
 # Step 3: Anchor detection
@@ -112,7 +141,8 @@ def combine_images(shifts, pipeline_data):
     # print(shifts)
     shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts)]
     combined_image = combine.smart_combine_images(shifted_images)
-    combined_image.save(r".\res\combined_image.jpg")
+    path, name = pipeline_data['result']['path'], pipeline_data['result']['name']
+    combined_image.save(rf"{path}\{name}.jpg")
     return combined_image
 
 
@@ -123,7 +153,7 @@ def detect_objects(combined_image):
     return combined_image
 
 
-def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
+def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessible_data=None):
     # Define the full pipeline
     full_pipeline = [
         ('load_images', load_images),
@@ -152,15 +182,23 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None):
         end_index = len(full_pipeline)
 
     steps = full_pipeline[start_index:end_index]
-    return Pipeline(steps, pipeline_input)
+    return Pipeline(steps, pipeline_input, accessible_data)
 
 
 if __name__ == '__main__':
     # Example usage
-    # input_data = r'C:\Users\t9146472\Documents\name'
-    # input_data = {"path": r'C:\Users\t9146472\Documents\DJI_04_310_320', "is_video": False}
-    input_data = {'path': 'DJI_0603_T.MP4', "is_video": True}
-    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data)
+    input_path = r'C:\Users\t9146472\Documents\DJI_0004_T.MP4'
+    is_video = True
+    start_time = (3 * 60 + 3)
+    duration = 1
+    distort_filter = True
+    crop_filter = True
+    name = "combination"
+
+    res_path = r".\res"
+    input_data = {'path': input_path, "is_video": is_video, "start_time": start_time, "duration": duration}
+    accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter}, 'result': {'path': res_path, 'name': name}}
+    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data, accessible_data=accessible_data)
     output_data = p.run()
     print(output_data)
 
