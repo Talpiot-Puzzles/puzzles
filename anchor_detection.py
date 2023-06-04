@@ -26,7 +26,7 @@ def _get_all_matches(descs, flann=None):
     return [flann.knnMatch(descs[i], descs[i + 1], k=2) for i in range(len(descs) - 1)]
 
 
-def _get_good_points(all_matches, ratio=0.2):
+def _get_good_points(all_matches, ratio=0.8):
     """
     Filter only images which uphold Lowe's ratio test.
     :return: An array of all relevant matches alongside Lowe's ratio (array of couples).
@@ -35,7 +35,7 @@ def _get_good_points(all_matches, ratio=0.2):
             all_matches]
 
 
-def _filter_by_max_amount(arr, k=10):
+def _filter_by_max_amount(arr, k=30):
     """
     Get top 10 matches for every 2 images.
     """

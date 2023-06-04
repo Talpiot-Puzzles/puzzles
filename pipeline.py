@@ -3,6 +3,7 @@ import os
 import cv2
 import numpy as np
 from PIL import Image
+from matplotlib import pyplot as plt
 
 import anchor_detection
 import combine
@@ -29,6 +30,8 @@ def capture_frames(path, start_time, duration):
     fps = vidcap.get(cv2.CAP_PROP_FPS)  # Get the frames per second (FPS) of the video
     start_frame = int(start_time * fps)  # Calculate the start frame based on the start time
     end_frame = int((start_time + duration) * fps)  # Calculate the end frame based on the start time and duration
+
+    print("frames", end_frame - start_frame)
 
     # Set the initial frame to the start frame
     vidcap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
@@ -109,7 +112,23 @@ def preprocess_images(images, pipeline_data):
 
 # Step 3: Anchor detection
 def detect_anchors(preprocessed_images, pipeline_data):
-    return anchor_detection.detect_anchors(preprocessed_images)
+    anchors = anchor_detection.detect_anchors(preprocessed_images)
+    return anchors
+    images = pipeline_data['images']
+    res = [images[0], *(2 * [images[i] for i in range(1, len(images) - 1)]), images[-1]]
+    res = [np.array(el) for el in res]
+
+    for i, img in enumerate(res):
+        for point in anchors[i]:
+            res[i] = cv2.circle(img, [int(el) for el in point], 100, (255, 0, 0))
+
+    fig, ax = plt.subplots(1, len(res))
+    for i in range(len(res)):
+        ax[i].imshow(res[i])
+
+    plt.show()
+    return anchors
+
 
 
 # Step 4: Connect images
@@ -120,28 +139,37 @@ def connect_images(anchors, pipeline_data):
 
 # Step 5: Shift images
 def shift_images(shifts, pipeline_data):
-    h_anchor, h_ground = pipeline_data["heights"]["anchor"], pipeline_data["heights"]["ground"]
-    dh = h_ground - h_anchor
-    refocused_shifts = []
-    for tup in shifts:
-        # print("tup", tup)
-        (dx, dy, tet) = tup
-        refocuse_x = -dh * dx / h_anchor
-        refocuse_y = -dh * dy / h_anchor
-        refocused_shifts.append((dx + refocuse_x, dy + refocuse_y, tet))
-    return refocused_shifts
+    new_shifts = []
+    # h_anchor, h_ground = pipeline_data["heights"]["anchor"], pipeline_data["heights"]["ground"]
+    # for h_anchor in range(37, 43, 1):
+    for h_anchor in range(30, 43, 2):
+        h_ground = 40
+        dh = h_ground - h_anchor
+        refocused_shifts = []
+        for tup in shifts:
+            # print("tup", tup)
+            (dx, dy, tet) = tup
+            refocuse_x = -dh * dx / h_anchor
+            refocuse_y = -dh * dy / h_anchor
+            refocused_shifts.append((dx + refocuse_x, dy + refocuse_y, tet))
+
+        new_shifts.append(refocused_shifts)
+    return new_shifts
 
 
 # Step 6: Combine images
 def combine_images(shifts, pipeline_data):
-    images = pipeline_data['images']
-    shifts = np.insert(shifts, 0, [0, 0, 0], axis=0)
-    # print(shifts)
-    shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts)]
-    combined_image = combine.smart_combine_images(shifted_images)
-    path, name = pipeline_data['result']['path'], pipeline_data['result']['name']
-    combined_image.save(rf"{path}\{name}.jpg")
-    return combined_image
+    combined_images = []
+    for i, shifts_group in enumerate(shifts):
+        images = pipeline_data['images']
+        shifts_group = np.insert(shifts_group, 0, [0, 0, 0], axis=0)
+        # print(shifts_group)
+        shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts_group)]
+        combined_image = combine.smart_combine_images(shifted_images)
+        path, name = pipeline_data['result']['path'], pipeline_data['result']['name']
+        combined_image.save(rf"{path}\{name}{i}.jpg")
+        combined_images.append(combined_image)
+    return combined_images
 
 
 # Step 7: Object detection
@@ -191,7 +219,8 @@ if __name__ == '__main__':
     input_path = r'C:\Users\t9146472\Documents\DJI_0004_T.MP4'
     is_video = True
     start_time = (3 * 60 + 3)
-    duration = 1
+    start_time = 54
+    duration = 3
     distort_filter = True
     crop_filter = True
     name = "combination"
