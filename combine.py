@@ -519,6 +519,7 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     print("### Combine overlap array ... ")
     # TODO: Implement the more method for combining the overlapping pixels
     combined_image = milo_simple_mean(combined_overlap)
+    # combined_image = simple_mean(combined_overlap)
     # combined_image = kernel_mean(combined_overlap, kernel_size=2)
     # combined_image = white_is_most_important(combined_overlap)
     print("### End combine ...")

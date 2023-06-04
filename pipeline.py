@@ -31,7 +31,7 @@ def capture_frames(path, start_time, duration):
     start_frame = int(start_time * fps)  # Calculate the start frame based on the start time
     end_frame = int((start_time + duration) * fps)  # Calculate the end frame based on the start time and duration
 
-    print("frames", end_frame - start_frame)
+    print(f"{end_frame - start_frame} frames - {start_time//60}:{start_time%60} to {(start_time+duration)//60}:{(start_time+duration)%60}")
 
     # Set the initial frame to the start frame
     vidcap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
@@ -220,7 +220,7 @@ if __name__ == '__main__':
     is_video = True
     start_time = (3 * 60 + 3)
     start_time = 54
-    duration = 3
+    duration = 1
     distort_filter = True
     crop_filter = True
     name = "combination"
