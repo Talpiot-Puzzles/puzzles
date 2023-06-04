@@ -379,7 +379,7 @@ def preprocess_combine(shifted_images: List[Tuple[np.ndarray, Tuple[float, float
     print("### Start preprocesses combine ...")
 
     for shifted_image in tqdm(shifted_images):
-        split_factor = 3
+        split_factor = 4
 
         # Step 1 - split pixels:
         update_shifted_image = split_and_update_shift(shifted_image, split_factor)
@@ -499,8 +499,8 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     # Create an empty array to hold the combined image
     # combined_overlap = [[[] for _ in range(combined_width)] for _ in range(combined_height)]
     # combined_overlap = -1 * np.ones(shape=(combined_height, combined_width, len(update_shifted_images)))
-    # combined_overlap = np.zeros(shape=(combined_height, combined_width, len(update_shifted_images)))
-    combined_overlap = np.memmap("temp.dat", dtype=np.float32, mode='w+', shape=(combined_height, combined_width, len(update_shifted_images)))
+    combined_overlap = np.zeros(shape=(combined_height, combined_width, len(update_shifted_images)))
+    # combined_overlap = np.memmap("temp.dat", dtype=np.float32, mode='w+', shape=(combined_height, combined_width, len(update_shifted_images)))
     # Combine the images by pasting them into the empty array
 
     # x0s, y0s = zip(*[calculate_position_in_combine_image(shift, m_image_position) for image, shift in tqdm(update_shifted_images)])
