@@ -17,6 +17,21 @@ def unite_sigmoid(x, upper_width=1, lower_width=30, meanval=127.5):
     return x
 
 
+def _my_f(t):
+    return 0.5 / 0.1895 * ((1.379 * t) - np.cos(np.pi * (-np.power(t, 2) / 3 - t / 6 + 1 / 2)))
+
+
+def _my_g(t):
+    return 0.5 * np.sign(t - 0.5) + _my_f(0.5 * np.sign(0.5 - t) + t)
+
+
+def my_f2(t, a=1.3):
+    return 1 / (a - 1) * (a * t - np.cos(np.pi * (-np.power(t, 2) / 3 - t / 6 + 1 / 2)))
+
+def my_func(t):
+    return 0.5 * np.sign(t - 0.5) + my_f2(0.5 * np.sign(0.5 - t) + t)
+
+
 def highlights_black_areas(image: np.ndarray, thresh_value: int) -> np.ndarray:
     """
     This function highlights the hot areas in the input image by performing a
@@ -513,7 +528,8 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     for i, (image, shift) in tqdm(enumerate(update_shifted_images)):
         x, y = calculate_position_in_combine_image(shift, m_image_position)
         # combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = unite_sigmoid(image)
-        combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = image
+        # combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = image
+        combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = 255 * my_func(image / 255)
         # append_to_combine_img(x, y, combined_overlap, image, (combined_height, combined_width), i)
 
     print("### Combine overlap array ... ")
