@@ -1,3 +1,4 @@
+import datetime
 import os
 
 import cv2
@@ -7,7 +8,6 @@ from matplotlib import pyplot as plt
 
 import anchor_detection
 import combine
-import plain_movement
 import plain_transform
 
 
@@ -32,7 +32,8 @@ def capture_frames(path, start_time, duration):
     start_frame = int(start_time * fps)  # Calculate the start frame based on the start time
     end_frame = int((start_time + duration) * fps)  # Calculate the end frame based on the start time and duration
 
-    print("frames", end_frame - start_frame)
+    print(
+        f"{end_frame - start_frame} frames - {start_time // 60:02d}:{start_time % 60:02d} to {(start_time + duration) // 60:02d}:{(start_time + duration) % 60:02d}")
 
     # Set the initial frame to the start frame
     vidcap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
@@ -65,14 +66,26 @@ def load_images(input_data, pipeline_data):
         path, start_time, duration = input_data['path'], input_data["start_time"], input_data["duration"]
         images = capture_frames(path, start_time, duration)
 
+    img_path = pipeline_data['result']['img_path']
+    for i, img in enumerate(images):
+        Image.fromarray(img).save(rf"{img_path}\img{i}.jpg")
+
     pipeline_data['images'] = images
+
+    fig, ax = plt.subplots(1, 2)
+    ax[0].imshow(images[0])
+    ax[1].imshow(images[-1])
+    plt.show()
+
     return images
 
 
 # Step 2: Preprocess images
 def preprocess_images(images, pipeline_data):
     height, width = images[0].shape
-    barrel_coef = -5.15e-5
+    filters = pipeline_data["filters"]
+    crop_from_frame = filters['crop_from_frame']
+    barrel_coef = filters["dist_coef"]
     distCoeff = np.array([[barrel_coef], [0], [0], [0]], dtype=np.float64)
     cam = np.eye(3, dtype=np.float32)
     cam[0, 2] = width / 2.0  # define center x
@@ -91,17 +104,16 @@ def preprocess_images(images, pipeline_data):
         height, width = img.shape
 
         # Calculate the boundaries for the middle third
-        start_row = height // 13
-        end_row = (height * 12) // 13
-        start_col = width // 13
-        end_col = (width * 12) // 13
+        start_row = height // crop_from_frame
+        end_row = (height * (crop_from_frame - 1)) // crop_from_frame
+        start_col = width // crop_from_frame
+        end_col = (width * (crop_from_frame - 1)) // crop_from_frame
 
         # Extract the middle third of the image
         middle_third = img[start_row:end_row, start_col:end_col]
         img = middle_third
         return np.where(img == 0, 1, img)
 
-    filters = pipeline_data["filters"]
     preprocessed_images = images
     if filters["distortion"]:
         preprocessed_images = [undistort(image) for image in preprocessed_images]
@@ -115,21 +127,20 @@ def preprocess_images(images, pipeline_data):
 def detect_anchors(preprocessed_images, pipeline_data):
     anchors = anchor_detection.detect_anchors(preprocessed_images)
     return anchors
-    images = p.accessible_data['images']
-    res = [images[0], *(2 * [images[i] for i in range(1, len(images) - 1)]), images[-1]]
-    res = [np.array(el) for el in res]
-
-    for i, img in enumerate(res):
-        for point in anchors[i]:
-            res[i] = cv2.circle(img, [int(el) for el in point], 100, (255, 0, 0))
-
-    fig, ax = plt.subplots(1, len(res))
-    for i in range(len(res)):
-        ax[i].imshow(res[i])
-
-    plt.show()
-    return anchors
-
+    # images = pipeline_data['images']
+    # res = [images[0], *(2 * [images[i] for i in range(1, len(images) - 1)]), images[-1]]
+    # res = [np.array(el) for el in res]
+    #
+    # for i, img in enumerate(res):
+    #     for point in anchors[i]:
+    #         res[i] = cv2.circle(img, [int(el) for el in point], 100, (255, 0, 0))
+    #
+    # fig, ax = plt.subplots(1, len(res))
+    # for i in range(len(res)):
+    #     ax[i].imshow(res[i])
+    #
+    # plt.show()
+    # return anchors
 
 
 # Step 4: Connect images
@@ -141,19 +152,27 @@ def connect_images(anchors, pipeline_data):
 # Step 5: Shift images
 def shift_images(shifts, pipeline_data):
     new_shifts = []
-    # for h_enkor in range(37, 43, 1):
-    for h_enkor in range(30, 43, 2):
-        h_ground = 40
-        dh = h_ground - h_enkor
+    anchor, h_ground = pipeline_data["heights"]["anchor"], pipeline_data["heights"]["ground"]
+    layers_num = pipeline_data["heights"]["layers_around"]
+    thickness = pipeline_data["heights"]["layer_thickness"]
+    layers_below = layers_num // 2
+    layers_below *= thickness
+
+    h_anchor = anchor - layers_below
+    # for h_anchor in range(37, 43, 1):
+    for _ in range(layers_num):
+        # h_ground = 40
+        dh = h_ground - h_anchor
         refocused_shifts = []
         for tup in shifts:
             # print("tup", tup)
             (dx, dy, tet) = tup
-            refocse_x = -dh * dx / h_enkor
-            refocse_y = -dh * dy / h_enkor
-            refocused_shifts.append((dx + refocse_x, dy + refocse_y, tet))
+            refocuse_x = -dh * dx / h_anchor
+            refocuse_y = -dh * dy / h_anchor
+            refocused_shifts.append((dx + refocuse_x, dy + refocuse_y, tet))
 
         new_shifts.append(refocused_shifts)
+        h_anchor += thickness
     return new_shifts
 
 
@@ -161,6 +180,7 @@ def shift_images(shifts, pipeline_data):
 def combine_images(shifts, pipeline_data):
     combined_images = []
     for i, shifts_group in enumerate(shifts):
+        print(f"layer number {i}")
         images = pipeline_data['images']
         shifts_group = np.insert(shifts_group, 0, [0, 0, 0], axis=0)
         # print(shifts_group)
@@ -211,23 +231,44 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessibl
     return Pipeline(steps, pipeline_input, accessible_data)
 
 
+# TODO: make the averaging weighted in favour of white pixles
 if __name__ == '__main__':
+    start_time = datetime.datetime.now()
+
     # Example usage
-    input_path = 'DJI_0603_T.MP4'
+    dist_coef = -5.15e-5
+    anchor_height = 40
+    ground_height = 40.5
+
+    input_path = r'C:\Users\t9146472\Documents\third_run.MP4'
     is_video = True
-    start_time = (3 * 60 + 3)
-    start_time = 54
+    crop_from_frame = 13
+    start_time = (1 * 60 + 6)
+    # start_time = 55
     duration = 3
     distort_filter = True
     crop_filter = True
     name = "combination"
+    num_of_layers = 1
+    layer_thickness = 1
 
     res_path = r".\res"
+    img_path = r".\imgs"
     input_data = {'path': input_path, "is_video": is_video, "start_time": start_time, "duration": duration}
-    accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter}, 'result': {'path': res_path, 'name': name}}
-    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data, accessible_data=accessible_data)
+    accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter, 'dist_coef': dist_coef,
+                                   'crop_from_frame': crop_from_frame},
+                       'result': {'path': res_path, 'img_path': img_path, 'name': name},
+                       'heights': {'anchor': anchor_height, 'ground': ground_height, 'layers_around': num_of_layers, 'layer_thickness': layer_thickness}}
+    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data,
+                      accessible_data=accessible_data)
     output_data = p.run()
     print(output_data)
+
+    end_time = datetime.datetime.now()
+    elapsed_time = end_time - start_time
+    minutes = elapsed_time.seconds // 60
+    seconds = elapsed_time.seconds % 60
+    print(f"runtime: {int(minutes)} minutes {int(seconds)} seconds")
 
     # p = make_pipeline(start_step='load_images', end_step='detect_anchors', pipeline_input=input_data)
     # images = p.accessible_data['images']
@@ -243,4 +284,3 @@ if __name__ == '__main__':
     #     ax[i].imshow(res[i])
     #
     # plt.show()
-
