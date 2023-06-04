@@ -148,12 +148,41 @@ def list_mean(lst: List[int]):
 def simple_mean(overlap_img):
     # overlap_img = np.array(overlap_img)
     counter = (overlap_img == 0).sum(axis=-1)
-    summed = overlap_img.sum(axis=-1) + counter
+    summed = overlap_img.sum(axis=-1)
     res = summed / (overlap_img.shape[-1] - counter)
 
     res = np.where(res == np.inf, 0, res)
 
     return Image.fromarray(res).convert('RGB')
+
+
+def milo_simple_mean(overlap_img):
+    # alpha = 1.1
+    # alpha = 1.2
+    alpha = 1.15
+    counter = (overlap_img == 0).sum(axis=-1)
+    to_mean = np.power(overlap_img, 1 / alpha)
+    summed = to_mean.sum(axis=-1)
+    summed = np.power(summed, alpha)
+    res = summed / (overlap_img.shape[-1] - counter)
+
+    res = np.where(res == np.inf, 0, res)
+
+    return Image.fromarray(res).convert('RGB')
+
+# def milomilo_simple_mean(overlap_img):
+#     alpha = 1.15
+#     padded = np.pad(overlap_img, ((0, 0), (1, 1), (1, 1)))
+#     overlap_img -= np.apply_along_axis(close_mean)
+#     counter = (overlap_img == 0).sum(axis=-1)
+#     to_mean = np.power(overlap_img, 1 / alpha)
+#     summed = to_mean.sum(axis=-1)
+#     summed = np.power(summed, alpha)
+#     res = summed / (overlap_img.shape[-1] - counter)
+#
+#     res = np.where(res == np.inf, 0, res)
+#
+#     return Image.fromarray(res).convert('RGB')
 
 
 def simple_mean2(overlap_img: List[List[List[int]]]) -> Image.Image:
@@ -489,7 +518,7 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
 
     print("### Combine overlap array ... ")
     # TODO: Implement the more method for combining the overlapping pixels
-    combined_image = simple_mean(combined_overlap)
+    combined_image = milo_simple_mean(combined_overlap)
     # combined_image = kernel_mean(combined_overlap, kernel_size=2)
     # combined_image = white_is_most_important(combined_overlap)
     print("### End combine ...")
