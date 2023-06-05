@@ -237,23 +237,25 @@ if __name__ == '__main__':
 
     # Example usage
     dist_coef = -5.15e-5
-    anchor_height = 40
-    ground_height = 40.5
+    anchor_height = 35
+    ground_height = 40
 
-    input_path = r'C:\Users\t9146472\Documents\third_run.MP4'
+    # input_path = r'C:\Users\t9146472\Documents\third_run.MP4'
+    input_path = "DJI_0603_T.MP4"
     is_video = True
     crop_from_frame = 13
     start_time = (1 * 60 + 6)
-    # start_time = 55
-    duration = 3
+    start_time = 54
+    # duration = 3
+    duration = 2
     distort_filter = True
     crop_filter = True
-    name = "combination"
+    name = "thousand"
     num_of_layers = 1
     layer_thickness = 1
 
     res_path = r".\res"
-    img_path = r".\imgs"
+    img_path = r".\images"
     input_data = {'path': input_path, "is_video": is_video, "start_time": start_time, "duration": duration}
     accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter, 'dist_coef': dist_coef,
                                    'crop_from_frame': crop_from_frame},

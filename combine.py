@@ -28,6 +28,7 @@ def _my_g(t):
 def my_f2(t, a=1.3):
     return 1 / (a - 1) * (a * t - np.cos(np.pi * (-np.power(t, 2) / 3 - t / 6 + 1 / 2)))
 
+
 def my_func(t):
     return 0.5 * np.sign(t - 0.5) + my_f2(0.5 * np.sign(0.5 - t) + t)
 
@@ -154,6 +155,7 @@ def kernel_mean(overlap_img: List[List[List[int]]], kernel_size: int = 3):
     combine_img = combine_img.convert('RGB')
     return combine_img
 
+
 def list_mean(lst: List[int]):
     if len(lst) == 0:
         return 0
@@ -171,7 +173,7 @@ def simple_mean(overlap_img):
     return Image.fromarray(res).convert('RGB')
 
 
-def milo_simple_mean(overlap_img):
+def milo_simple_mean(overlap_img, ws):
     # alpha = 1.1
     # alpha = 1.2
     alpha = 1.15
@@ -179,11 +181,13 @@ def milo_simple_mean(overlap_img):
     to_mean = np.power(overlap_img, 1 / alpha)
     summed = to_mean.sum(axis=-1)
     summed = np.power(summed, alpha)
-    res = summed / (overlap_img.shape[-1] - counter)
+    # res = summed / (overlap_img.shape[-1] - counter)
+    res = summed / ws
 
     res = np.where(res == np.inf, 0, res)
 
     return Image.fromarray(res).convert('RGB')
+
 
 # def milomilo_simple_mean(overlap_img):
 #     alpha = 1.15
@@ -343,7 +347,8 @@ def calculate_vertices(upper_left, height, width):
     lower_right = (upper_left[0] + width, upper_left[1] + height)
     # lower left vertex
     lower_left = (upper_left[0], upper_left[1] + height)
-    return [upper_left, upper_right, lower_right,lower_left]
+    return [upper_left, upper_right, lower_right, lower_left]
+
 
 def find_min_max_coordinates(corners):
     x_values = [corner[0] for corner in corners]
@@ -456,8 +461,7 @@ def append_to_combine_img(x: int, y: int, combined_overlap: np.ndarray, image: n
     #     for i in range(image_h):
     #         combined_overlap[y + i][x + j].append(-1)
 
-    combined_overlap[y:y+image_h, x:x+image_w, index] = image
-
+    combined_overlap[y:y + image_h, x:x + image_w, index] = image
 
     # for i in range(image_h):
     #     for j in range(image_w):
@@ -515,6 +519,7 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     # combined_overlap = [[[] for _ in range(combined_width)] for _ in range(combined_height)]
     # combined_overlap = -1 * np.ones(shape=(combined_height, combined_width, len(update_shifted_images)))
     combined_overlap = np.zeros(shape=(combined_height, combined_width, len(update_shifted_images)))
+    ws = np.zeros(shape=(combined_height, combined_width))
     # combined_overlap = np.memmap("temp.dat", dtype=np.float32, mode='w+', shape=(combined_height, combined_width, len(update_shifted_images)))
     # Combine the images by pasting them into the empty array
 
@@ -529,12 +534,16 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
         x, y = calculate_position_in_combine_image(shift, m_image_position)
         # combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = unite_sigmoid(image)
         # combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = image
-        combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = 255 * my_func(image / 255)
+
+        # w = my_func(image / 255)
+        w = np.power(image / 255, 1000)
+        ws[y: y + image.shape[0], x: x + image.shape[1]] += w
+        combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = image * w
         # append_to_combine_img(x, y, combined_overlap, image, (combined_height, combined_width), i)
 
     print("### Combine overlap array ... ")
     # TODO: Implement the more method for combining the overlapping pixels
-    combined_image = milo_simple_mean(combined_overlap)
+    combined_image = milo_simple_mean(combined_overlap, ws)
     # combined_image = simple_mean(combined_overlap)
     # combined_image = kernel_mean(combined_overlap, kernel_size=2)
     # combined_image = white_is_most_important(combined_overlap)
