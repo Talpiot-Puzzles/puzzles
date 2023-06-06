@@ -1,5 +1,6 @@
 import datetime
 import os
+import shutil
 
 import cv2
 import numpy as np
@@ -119,6 +120,12 @@ def preprocess_images(images, pipeline_data):
         preprocessed_images = [undistort(image) for image in preprocessed_images]
     if filters["crop"]:
         preprocessed_images = [crop(image) for image in preprocessed_images]
+    if filters["stretch"]:
+        min_value = np.min(images)
+        max_value = np.max(images)
+        print(f"min: {min_value}, max: {max_value}")
+        filters['min_val'] = min_value
+        filters['max_val'] = max_value
 
     return preprocessed_images
 
@@ -178,6 +185,7 @@ def shift_images(shifts, pipeline_data):
 
 # Step 6: Combine images
 def combine_images(shifts, pipeline_data):
+    filters = pipeline_data["filters"]
     combined_images = []
     for i, shifts_group in enumerate(shifts):
         print(f"layer number {i}")
@@ -185,7 +193,7 @@ def combine_images(shifts, pipeline_data):
         shifts_group = np.insert(shifts_group, 0, [0, 0, 0], axis=0)
         # print(shifts_group)
         shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts_group)]
-        combined_image = combine.smart_combine_images(shifted_images)
+        combined_image = combine.smart_combine_images(shifted_images,filters)
         path, name = pipeline_data['result']['path'], pipeline_data['result']['name']
         combined_image.save(rf"{path}\{name}{i}.jpg")
         combined_images.append(combined_image)
@@ -241,24 +249,30 @@ if __name__ == '__main__':
     ground_height = 40
 
     # input_path = r'C:\Users\t9146472\Documents\third_run.MP4'
-    input_path = "DJI_0603_T.MP4"
+    input_path = r"C:\Users\t9146472\Documents\DJI_0603_T.MP4"
     is_video = True
     crop_from_frame = 13
-    start_time = (1 * 60 + 6)
+    # start_time = (1 * 60 + 6)
     start_time = 54
     # duration = 3
     duration = 2
     distort_filter = True
     crop_filter = True
-    name = "thousand"
+    stretch_histogram = True
+    # stretch_histogram = False
+    name = "stretched_after"
+    # name = "unstretch"
     num_of_layers = 1
     layer_thickness = 1
 
     res_path = r".\res"
-    img_path = r".\images"
+    img_path = r".\imgs"
+    shutil.rmtree(img_path)
+    os.mkdir(img_path)
+
     input_data = {'path': input_path, "is_video": is_video, "start_time": start_time, "duration": duration}
     accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter, 'dist_coef': dist_coef,
-                                   'crop_from_frame': crop_from_frame},
+                                   'crop_from_frame': crop_from_frame, 'stretch': stretch_histogram, 'min_val': 0, 'max_val': 255},
                        'result': {'path': res_path, 'img_path': img_path, 'name': name},
                        'heights': {'anchor': anchor_height, 'ground': ground_height, 'layers_around': num_of_layers, 'layer_thickness': layer_thickness}}
     p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data,

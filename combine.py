@@ -1,7 +1,6 @@
 from typing import List, Tuple, Dict
 
 import cv2
-import math
 import numpy as np
 from PIL import Image
 from scipy.signal import convolve2d
@@ -495,8 +494,12 @@ def calculate_position_in_combine_image(shift: Tuple[int, int], m_image_position
     return x, y
 
 
+def stretch_histogram(img, max_value, min_value):
+    return ((255.0 / (max_value - min_value)) * (img - min_value)).astype(np.uint8)
+
+
 def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
-            update_shifted_images: List[Tuple[np.ndarray, Tuple[int, int, int]]]) -> np.ndarray:
+            update_shifted_images: List[Tuple[np.ndarray, Tuple[int, int, int]]],filters) -> np.ndarray:
     """
     Combines the shifted images into a single combined image.
 
@@ -536,7 +539,9 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
         # combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = image
 
         # w = my_func(image / 255)
-        w = np.power(image / 255, 1000)
+
+        image = stretch_histogram(image,filters['max_val'],filters['min_val'])
+        w = np.power(image / 255, 100)
         ws[y: y + image.shape[0], x: x + image.shape[1]] += w
         combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = image * w
         # append_to_combine_img(x, y, combined_overlap, image, (combined_height, combined_width), i)
@@ -551,7 +556,7 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     return combined_image
 
 
-def smart_combine_images(shifted_images: List[Tuple[Image.Image, Tuple[float, float, float]]]) -> Image.Image:
+def smart_combine_images(shifted_images: List[Tuple[Image.Image, Tuple[float, float, float]]],filters) -> Image.Image:
     """
     Combines a list of shifted images into a single combined image.
 
@@ -571,7 +576,7 @@ def smart_combine_images(shifted_images: List[Tuple[Image.Image, Tuple[float, fl
     # TODO: Remove in the pipeline
     # shifted_images = load_images(shifted_images)
     m_image_position, combine_size, update_shifted_images = preprocess_combine(shifted_images)
-    combined_image = combine(m_image_position, combine_size, update_shifted_images)
+    combined_image = combine(m_image_position, combine_size, update_shifted_images,filters)
     # Make transform to get highlights on the hot areas
     # combined_image = highlights_hot_areas(combined_image, 50)
     # combined_image = highlights_black_areas(combined_image, 100)
