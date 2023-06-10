@@ -1,4 +1,4 @@
-import datetime
+import time
 import os
 import shutil
 
@@ -11,6 +11,18 @@ import anchor_detection
 import combine
 import plain_transform
 
+def timeit(func):
+    """
+    Decorator for measuring function's running time.
+    """
+    def measure_time(*args, **kw):
+        start_time = time.time()
+        result = func(*args, **kw)
+        print("Processing time of %s(): %.2f seconds."
+              % (func.__qualname__, time.time() - start_time))
+        return result
+
+    return measure_time
 
 class Pipeline:
     def __init__(self, steps, pipeline_input=None, accessible_data=None):
@@ -18,6 +30,7 @@ class Pipeline:
         self.pipeline_input = pipeline_input
         self.steps = steps
 
+    @timeit
     def run(self):
         # Run the pipeline steps in sequence
         data = self.pipeline_input
@@ -26,7 +39,7 @@ class Pipeline:
             print(f"successfully run '{step_name}'")
         return data
 
-
+@timeit
 def capture_frames(path, start_time, duration):
     vidcap = cv2.VideoCapture(path)
     fps = vidcap.get(cv2.CAP_PROP_FPS)  # Get the frames per second (FPS) of the video
@@ -53,6 +66,7 @@ def capture_frames(path, start_time, duration):
 
 
 # Step 1: Load images from directory
+@timeit
 def load_images(input_data, pipeline_data):
     if not input_data["is_video"]:
         image_dir = input_data["path"]
@@ -82,6 +96,7 @@ def load_images(input_data, pipeline_data):
 
 
 # Step 2: Preprocess images
+@timeit
 def preprocess_images(images, pipeline_data):
     height, width = images[0].shape
     filters = pipeline_data["filters"]
@@ -131,6 +146,7 @@ def preprocess_images(images, pipeline_data):
 
 
 # Step 3: Anchor detection
+@timeit
 def detect_anchors(preprocessed_images, pipeline_data):
     anchors = anchor_detection.detect_anchors(preprocessed_images)
     return anchors
@@ -151,12 +167,14 @@ def detect_anchors(preprocessed_images, pipeline_data):
 
 
 # Step 4: Connect images
+@timeit
 def connect_images(anchors, pipeline_data):
     to_use = [[anchors[i], anchors[i + 1]] for i in range(0, len(anchors) - 1, 2)]
     return plain_transform.plain_transform(to_use)
 
 
 # Step 5: Shift images
+@timeit
 def shift_images(shifts, pipeline_data):
     new_shifts = []
     anchor, h_ground = pipeline_data["heights"]["anchor"], pipeline_data["heights"]["ground"]
@@ -184,6 +202,7 @@ def shift_images(shifts, pipeline_data):
 
 
 # Step 6: Combine images
+@timeit
 def combine_images(shifts, pipeline_data):
     filters = pipeline_data["filters"]
     combined_images = []
@@ -201,6 +220,7 @@ def combine_images(shifts, pipeline_data):
 
 
 # Step 7: Object detection
+@timeit
 def detect_objects(combined_image):
     # labeled_image = detect_objects_in_image(combined_image, images)
     # return labeled_image
@@ -241,7 +261,7 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessibl
 
 # TODO: make the averaging weighted in favour of white pixles
 if __name__ == '__main__':
-    start_time = datetime.datetime.now()
+    # start_time = datetime.datetime.now()
 
     # Example usage
     dist_coef = -5.15e-5
@@ -249,21 +269,23 @@ if __name__ == '__main__':
     ground_height = 40
 
     # input_path = r'C:\Users\t9146472\Documents\third_run.MP4'
-    input_path = r"C:\Users\t9146472\Documents\DJI_0603_T.MP4"
+    input_path = r"C:\Users\t9146472\Documents\first_run.MP4"
     is_video = True
     crop_from_frame = 13
-    # start_time = (1 * 60 + 6)
-    start_time = 54
-    # duration = 3
-    duration = 2
+    # start_time = (1 * 60)
+    start_time = (1 * 60 + 7)
+    # start_time = 12
+    duration = 3
+    # duration = 2
     distort_filter = True
     crop_filter = True
-    stretch_histogram = True
+    stretch_histogram = False
+    contrast_factor = 25
     # stretch_histogram = False
-    name = "stretched_after"
+    name = "try"
     # name = "unstretch"
-    num_of_layers = 1
-    layer_thickness = 1
+    num_of_layers = 5
+    layer_thickness = 0.5
 
     res_path = r".\res"
     img_path = r".\imgs"
@@ -272,7 +294,7 @@ if __name__ == '__main__':
 
     input_data = {'path': input_path, "is_video": is_video, "start_time": start_time, "duration": duration}
     accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter, 'dist_coef': dist_coef,
-                                   'crop_from_frame': crop_from_frame, 'stretch': stretch_histogram, 'min_val': 0, 'max_val': 255},
+                                   'crop_from_frame': crop_from_frame, 'stretch': stretch_histogram, 'contrast_factor': contrast_factor , 'min_val': 0, 'max_val': 255},
                        'result': {'path': res_path, 'img_path': img_path, 'name': name},
                        'heights': {'anchor': anchor_height, 'ground': ground_height, 'layers_around': num_of_layers, 'layer_thickness': layer_thickness}}
     p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data,
@@ -280,11 +302,11 @@ if __name__ == '__main__':
     output_data = p.run()
     print(output_data)
 
-    end_time = datetime.datetime.now()
-    elapsed_time = end_time - start_time
-    minutes = elapsed_time.seconds // 60
-    seconds = elapsed_time.seconds % 60
-    print(f"runtime: {int(minutes)} minutes {int(seconds)} seconds")
+    # end_time = datetime.datetime.now()
+    # elapsed_time = end_time - start_time
+    # minutes = elapsed_time.seconds // 60
+    # seconds = elapsed_time.seconds % 60
+    # print(f"runtime: {int(minutes)} minutes {int(seconds)} seconds")
 
     # p = make_pipeline(start_step='load_images', end_step='detect_anchors', pipeline_input=input_data)
     # images = p.accessible_data['images']
