@@ -2,6 +2,7 @@ from typing import List, Tuple, Dict
 
 import cv2
 import numpy as np
+from tensorflow.keras.layers import AveragePooling2D
 from PIL import Image
 from scipy.signal import convolve2d
 from tqdm import tqdm
@@ -521,7 +522,9 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     # Create an empty array to hold the combined image
     # combined_overlap = [[[] for _ in range(combined_width)] for _ in range(combined_height)]
     # combined_overlap = -1 * np.ones(shape=(combined_height, combined_width, len(update_shifted_images)))
+
     combined_overlap = np.zeros(shape=(combined_height, combined_width, len(update_shifted_images)))
+
     ws = np.zeros(shape=(combined_height, combined_width))
     # combined_overlap = np.memmap("temp.dat", dtype=np.float32, mode='w+', shape=(combined_height, combined_width, len(update_shifted_images)))
     # Combine the images by pasting them into the empty array
@@ -531,8 +534,21 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     # x1s = [el + image.shape[0] for el, image in zip(x0s, images)]
     # y1s = [el + image.shape[1] for el, image in zip(y0s, images)]
     #
-    # indices = np.array([np.stack(np.meshgrid(np.linspace(x0, x1 - 1, (x1 - x0)).astype(np.int32), np.linspace(y0, y1 - 1, (y1 - y0)).astype(np.int32))) for x0, x1, y0, y1 in zip(x0s, x1s, y0s, y1s)])
+    # x_range = [np.linspace(x0, x1 - 1, (x1 - x0)).astype(np.int32) for x0, x1 in zip(x0s, x1s)]
+    # y_range = [np.linspace(y0, y1 - 1, (y1 - y0)).astype(np.int32) for y0, y1 in zip(y0s, y1s)]
+    # indices = [np.stack(np.meshgrid(range_x, range_y)) for range_x, range_y in zip(x_range, y_range)]
+    # # indices = np.transpose(np.array(indices), axes=(3, 2, 0, 1))
+    # indices = np.transpose(np.array(indices), axes=(0, 3, 2, 1))
+    # # images = np.transpose(np.array(images), axes=(1, 2, 0))
+    # combined_overlap = np.transpose(combined_overlap, axes=(2, 0, 1))[:, :, :, np.newaxis]
+    # # indices = np.array([np.stack(np.meshgrid(np.linspace(x0, x1 - 1, (x1 - x0)).astype(np.int32), np.linspace(y0, y1 - 1, (y1 - y0)).astype(np.int32))) for x0, x1, y0, y1 in zip(x0s, x1s, y0s, y1s)])
     # np.put_along_axis(combined_overlap, indices, images, axis=-1)
+    # # TODO not exactly
+    #
+    # np.put_along_axis(combined_overlap[:, :2048, :2560, :], indices, np.array(images)[:, :, :, np.newaxis], axis=-1)
+
+    p = AveragePooling2D(pool_size=(15, 15), strides=(1, 1), padding='same')
+
     for i, (image, shift) in tqdm(enumerate(update_shifted_images)):
         x, y = calculate_position_in_combine_image(shift, m_image_position)
         # combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = unite_sigmoid(image)
@@ -541,10 +557,31 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
         # w = my_func(image / 255)
 
         image = stretch_histogram(image,filters['max_val'],filters['min_val'])
+
+
+        # def _my_f(x):
+        #     return 0.8 * x + (x -0.8) * np.power(x, 100)
         w = np.power(image / 255, 100)
-        ws[y: y + image.shape[0], x: x + image.shape[1]] += w
-        combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = image * w
+
+        ws0 = np.squeeze(p(image[np.newaxis, :, :, np.newaxis].astype(np.float)))
+        ws0 = np.abs(image - ws0)
+        ws0 /= ws0.max()
+
+        # w = 1
+        # w = _my_f(image / 255)
+        ws[y: y + image.shape[0], x: x + image.shape[1]] += w * np.sqrt(ws0)
+        combined_overlap[y:y + image.shape[0], x:x + image.shape[1], i] = image * w * ws0
         # append_to_combine_img(x, y, combined_overlap, image, (combined_height, combined_width), i)
+
+
+    # ws0 = np.squeeze(p(combined_overlap[:, :, :, np.newaxis].astype(np.float)))
+    # ws0 = np.abs(combined_overlap - ws0)
+    # ws0 /= ws0.max()
+    #
+    # ws *= np.sqrt(ws0).sum(axis=-1)
+    # combined_overlap *= ws0
+
+
 
     print("### Combine overlap array ... ")
     # TODO: Implement the more method for combining the overlapping pixels

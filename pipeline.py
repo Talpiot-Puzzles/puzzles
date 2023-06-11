@@ -191,6 +191,7 @@ def combine_images(shifts, pipeline_data):
         print(f"layer number {i}")
         images = pipeline_data['images']
         shifts_group = np.insert(shifts_group, 0, [0, 0, 0], axis=0)
+        shifts_group[:,2] = 0
         # print(shifts_group)
         shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts_group)]
         combined_image = combine.smart_combine_images(shifted_images,filters)
@@ -245,24 +246,25 @@ if __name__ == '__main__':
 
     # Example usage
     dist_coef = -5.15e-5
-    anchor_height = 35
-    ground_height = 40
+    anchor_height = 45
+    ground_height = 50
 
     # input_path = r'C:\Users\t9146472\Documents\third_run.MP4'
-    input_path = r"C:\Users\t9146472\Documents\DJI_0603_T.MP4"
+    input_path = r"DJI_0473.MP4"
     is_video = True
     crop_from_frame = 13
     # start_time = (1 * 60 + 6)
-    start_time = 54
+    start_time = 11
     # duration = 3
-    duration = 2
+    duration = 1
     distort_filter = True
     crop_filter = True
     stretch_histogram = True
     # stretch_histogram = False
     name = "stretched_after"
+    name = "egoz_3rd"
     # name = "unstretch"
-    num_of_layers = 1
+    num_of_layers = 4
     layer_thickness = 1
 
     res_path = r".\res"
