@@ -243,19 +243,22 @@ def split_pixels(img: np.ndarray, split_factor: int) -> np.ndarray:
     if split_factor <= 0:
         raise ValueError("Split factor must be greater than 0.")
 
-    # Get the height and width of the image
-    height, width = img.shape
+    # Using np.repeat along both axis to split pixels
+    return np.repeat(np.repeat(img, split_factor, axis=0), split_factor, axis=1)
 
-    # Create a new array with the specified split factor
-    new_height = height * split_factor
-    new_width = width * split_factor
-    new_array = np.zeros((new_height, new_width), dtype=np.uint8)
-
-    # Copy the pixels from the original image to the new image, splitting each pixel into smaller pixels
-    for i in range(height):
-        for j in range(width):
-            new_array[i * split_factor:(i + 1) * split_factor, j * split_factor:(j + 1) * split_factor] = img[i, j]
-    return new_array
+    # # Get the height and width of the image
+    # height, width = img.shape
+    #
+    # # Create a new array with the specified split factor
+    # new_height = height * split_factor
+    # new_width = width * split_factor
+    # new_array = np.zeros((new_height, new_width), dtype=np.uint8)
+    #
+    # # Copy the pixels from the original image to the new image, splitting each pixel into smaller pixels
+    # for i in range(height):
+    #     for j in range(width):
+    #         new_array[i * split_factor:(i + 1) * split_factor, j * split_factor:(j + 1) * split_factor] = img[i, j]
+    # return new_array
 
 
 def rotate_image(image: np.ndarray, angle_deg: float) -> Tuple[np.ndarray, Tuple[int, int]]:
@@ -500,7 +503,7 @@ def stretch_histogram(img, max_value, min_value):
 
 
 def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
-            update_shifted_images: List[Tuple[np.ndarray, Tuple[int, int, int]]],filters) -> np.ndarray:
+            update_shifted_images: List[Tuple[np.ndarray, Tuple[int, int, int]]], filters) -> np.ndarray:
     """
     Combines the shifted images into a single combined image.
 
@@ -522,9 +525,7 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     # Create an empty array to hold the combined image
     # combined_overlap = [[[] for _ in range(combined_width)] for _ in range(combined_height)]
     # combined_overlap = -1 * np.ones(shape=(combined_height, combined_width, len(update_shifted_images)))
-
     combined_overlap = np.zeros(shape=(combined_height, combined_width, len(update_shifted_images)))
-
     ws = np.zeros(shape=(combined_height, combined_width))
     # combined_overlap = np.memmap("temp.dat", dtype=np.float32, mode='w+', shape=(combined_height, combined_width, len(update_shifted_images)))
     # Combine the images by pasting them into the empty array
@@ -593,7 +594,7 @@ def combine(m_image_position: Dict[str, int], combine_size: Tuple[int, int],
     return combined_image
 
 
-def smart_combine_images(shifted_images: List[Tuple[Image.Image, Tuple[float, float, float]]],filters) -> Image.Image:
+def smart_combine_images(shifted_images: List[Tuple[Image.Image, Tuple[float, float, float]]], filters) -> Image.Image:
     """
     Combines a list of shifted images into a single combined image.
 
@@ -613,7 +614,7 @@ def smart_combine_images(shifted_images: List[Tuple[Image.Image, Tuple[float, fl
     # TODO: Remove in the pipeline
     # shifted_images = load_images(shifted_images)
     m_image_position, combine_size, update_shifted_images = preprocess_combine(shifted_images)
-    combined_image = combine(m_image_position, combine_size, update_shifted_images,filters)
+    combined_image = combine(m_image_position, combine_size, update_shifted_images, filters)
     # Make transform to get highlights on the hot areas
     # combined_image = highlights_hot_areas(combined_image, 50)
     # combined_image = highlights_black_areas(combined_image, 100)

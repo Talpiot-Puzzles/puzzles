@@ -11,6 +11,18 @@ import anchor_detection
 import combine
 import plain_transform
 
+def timeit(func):
+    """
+    Decorator for measuring function's running time.
+    """
+    def measure_time(*args, **kw):
+        start_time = time.time()
+        result = func(*args, **kw)
+        print("Processing time of %s(): %.2f seconds."
+              % (func.__qualname__, time.time() - start_time))
+        return result
+
+    return measure_time
 
 class Pipeline:
     def __init__(self, steps, pipeline_input=None, accessible_data=None):
@@ -18,6 +30,7 @@ class Pipeline:
         self.pipeline_input = pipeline_input
         self.steps = steps
 
+    @timeit
     def run(self):
         # Run the pipeline steps in sequence
         data = self.pipeline_input
@@ -26,7 +39,7 @@ class Pipeline:
             print(f"successfully run '{step_name}'")
         return data
 
-
+@timeit
 def capture_frames(path, start_time, duration):
     vidcap = cv2.VideoCapture(path)
     fps = vidcap.get(cv2.CAP_PROP_FPS)  # Get the frames per second (FPS) of the video
@@ -53,6 +66,7 @@ def capture_frames(path, start_time, duration):
 
 
 # Step 1: Load images from directory
+@timeit
 def load_images(input_data, pipeline_data):
     if not input_data["is_video"]:
         image_dir = input_data["path"]
@@ -82,6 +96,7 @@ def load_images(input_data, pipeline_data):
 
 
 # Step 2: Preprocess images
+@timeit
 def preprocess_images(images, pipeline_data):
     height, width = images[0].shape
     filters = pipeline_data["filters"]
@@ -131,6 +146,7 @@ def preprocess_images(images, pipeline_data):
 
 
 # Step 3: Anchor detection
+@timeit
 def detect_anchors(preprocessed_images, pipeline_data):
     anchors = anchor_detection.detect_anchors(preprocessed_images)
     return anchors
@@ -151,12 +167,14 @@ def detect_anchors(preprocessed_images, pipeline_data):
 
 
 # Step 4: Connect images
+@timeit
 def connect_images(anchors, pipeline_data):
     to_use = [[anchors[i], anchors[i + 1]] for i in range(0, len(anchors) - 1, 2)]
     return plain_transform.plain_transform(to_use)
 
 
 # Step 5: Shift images
+@timeit
 def shift_images(shifts, pipeline_data):
     new_shifts = []
     anchor, h_ground = pipeline_data["heights"]["anchor"], pipeline_data["heights"]["ground"]
@@ -184,6 +202,7 @@ def shift_images(shifts, pipeline_data):
 
 
 # Step 6: Combine images
+@timeit
 def combine_images(shifts, pipeline_data):
     filters = pipeline_data["filters"]
     combined_images = []
@@ -191,7 +210,6 @@ def combine_images(shifts, pipeline_data):
         print(f"layer number {i}")
         images = pipeline_data['images']
         shifts_group = np.insert(shifts_group, 0, [0, 0, 0], axis=0)
-        shifts_group[:,2] = 0
         # print(shifts_group)
         shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts_group)]
         combined_image = combine.smart_combine_images(shifted_images,filters)
@@ -202,6 +220,7 @@ def combine_images(shifts, pipeline_data):
 
 
 # Step 7: Object detection
+@timeit
 def detect_objects(combined_image):
     # labeled_image = detect_objects_in_image(combined_image, images)
     # return labeled_image
@@ -242,7 +261,7 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessibl
 
 # TODO: make the averaging weighted in favour of white pixles
 if __name__ == '__main__':
-    start_time = datetime.datetime.now()
+    # start_time = datetime.datetime.now()
 
     # Example usage
     dist_coef = -5.15e-5
@@ -282,11 +301,11 @@ if __name__ == '__main__':
     output_data = p.run()
     print(output_data)
 
-    end_time = datetime.datetime.now()
-    elapsed_time = end_time - start_time
-    minutes = elapsed_time.seconds // 60
-    seconds = elapsed_time.seconds % 60
-    print(f"runtime: {int(minutes)} minutes {int(seconds)} seconds")
+    # end_time = datetime.datetime.now()
+    # elapsed_time = end_time - start_time
+    # minutes = elapsed_time.seconds // 60
+    # seconds = elapsed_time.seconds % 60
+    # print(f"runtime: {int(minutes)} minutes {int(seconds)} seconds")
 
     # p = make_pipeline(start_step='load_images', end_step='detect_anchors', pipeline_input=input_data)
     # images = p.accessible_data['images']
