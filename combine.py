@@ -370,7 +370,7 @@ def calculate_combined_size(combine_min, combine_max, shift, image):
     combine_max['y'] = max(combine_max['y'], max_y)
 
 
-def preprocess_combine(shifted_images: List[Tuple[np.ndarray, Tuple[float, float, float]]]) -> Tuple[
+def preprocess_combine(shifted_images: List[Tuple[np.ndarray, Tuple[float, float, float]]], filters) -> Tuple[
     Dict[str, int], Tuple[int, int], List[Tuple[np.ndarray, Tuple[int, int]]]]:
     """
     Preprocesses the shifted images for combining by performing the necessary steps.
@@ -398,7 +398,7 @@ def preprocess_combine(shifted_images: List[Tuple[np.ndarray, Tuple[float, float
     print("### Start preprocesses combine ...")
 
     for shifted_image in tqdm(shifted_images):
-        split_factor = 4
+        split_factor = filters['split_factor']
 
         # Step 1 - split pixels:
         update_shifted_image = split_and_update_shift(shifted_image, split_factor)
@@ -577,7 +577,7 @@ def smart_combine_images(shifted_images: List[Tuple[Image.Image, Tuple[float, fl
     """
     # TODO: Remove in the pipeline
     # shifted_images = load_images(shifted_images)
-    m_image_position, combine_size, update_shifted_images = preprocess_combine(shifted_images)
+    m_image_position, combine_size, update_shifted_images = preprocess_combine(shifted_images, filters)
     combined_image = combine(m_image_position, combine_size, update_shifted_images, filters)
     # Make transform to get highlights on the hot areas
     # combined_image = highlights_hot_areas(combined_image, 50)

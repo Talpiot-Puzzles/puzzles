@@ -64,6 +64,11 @@ def capture_frames(path, start_time, duration):
     vidcap.release()
     return images
 
+def show_first_and_last_image_of_scan(images):
+    fig, ax = plt.subplots(1, 2)
+    ax[0].imshow(images[0])
+    ax[1].imshow(images[-1])
+    plt.show()
 
 # Step 1: Load images from directory
 @timeit
@@ -87,12 +92,10 @@ def load_images(input_data, pipeline_data):
 
     pipeline_data['images'] = images
 
-    fig, ax = plt.subplots(1, 2)
-    ax[0].imshow(images[0])
-    ax[1].imshow(images[-1])
-    plt.show()
+    # show_first_and_last_image_of_scan(images)
 
     return images
+
 
 
 # Step 2: Preprocess images
@@ -265,42 +268,42 @@ if __name__ == '__main__':
 
     # Example usage
     dist_coef = -5.15e-5
-    anchor_height = 35
-    ground_height = 40
+    anchor_height = 51.5
+    ground_height = 50
 
     # input_path = r'C:\Users\t9146472\Documents\third_run.MP4'
-    input_path = r"C:\Users\t9146472\Documents\first_run.MP4"
+    input_path = r"C:\Users\t9146472\Documents\61.MP4"
     is_video = True
     crop_from_frame = 13
-    # start_time = (1 * 60)
-    start_time = (1 * 60 + 7)
-    # start_time = 12
-    duration = 3
-    # duration = 2
+    start_time = (0 * 60 + 37)
+    duration = 2
     distort_filter = True
     crop_filter = True
-    stretch_histogram = False
-    contrast_factor = 25
-    # stretch_histogram = False
-    name = "try"
-    # name = "unstretch"
-    num_of_layers = 5
+    stretch_histogram = True
+    split_factor = 3
+    contrast_factor = 10
+    name = "61_focused51.5_contrast10_split3"
+    num_of_layers = 1
     layer_thickness = 0.5
 
     res_path = r".\res"
     img_path = r".\imgs"
-    shutil.rmtree(img_path)
-    os.mkdir(img_path)
+    # shutil.rmtree(img_path)
+    # os.mkdir(img_path)
 
     input_data = {'path': input_path, "is_video": is_video, "start_time": start_time, "duration": duration}
     accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter, 'dist_coef': dist_coef,
-                                   'crop_from_frame': crop_from_frame, 'stretch': stretch_histogram, 'contrast_factor': contrast_factor , 'min_val': 0, 'max_val': 255},
+                                   'crop_from_frame': crop_from_frame, 'stretch': stretch_histogram,
+                                   'contrast_factor': contrast_factor, 'min_val': 0, 'max_val': 255,
+                                   'split_factor': split_factor},
                        'result': {'path': res_path, 'img_path': img_path, 'name': name},
-                       'heights': {'anchor': anchor_height, 'ground': ground_height, 'layers_around': num_of_layers, 'layer_thickness': layer_thickness}}
+                       'heights': {'anchor': anchor_height, 'ground': ground_height, 'layers_around': num_of_layers,
+                                   'layer_thickness': layer_thickness}}
     p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data,
                       accessible_data=accessible_data)
     output_data = p.run()
     print(output_data)
+
 
     # end_time = datetime.datetime.now()
     # elapsed_time = end_time - start_time
