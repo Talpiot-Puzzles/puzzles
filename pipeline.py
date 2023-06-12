@@ -276,7 +276,7 @@ if __name__ == '__main__':
     is_video = True
     crop_from_frame = 13
     start_time = (0 * 60 + 37)
-    duration = 2
+    duration = 3
     distort_filter = True
     crop_filter = True
     stretch_histogram = True

@@ -35,7 +35,7 @@ def _get_good_points(all_matches, ratio=0.8):
             all_matches]
 
 
-def _filter_by_max_amount(arr, k=30):
+def _filter_by_max_amount(arr, k=50):
     """
     Get top 10 matches for every 2 images.
     """
