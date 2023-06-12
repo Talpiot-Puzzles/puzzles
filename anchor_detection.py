@@ -26,7 +26,7 @@ def _get_all_matches(descs, flann=None):
     return [flann.knnMatch(descs[i], descs[i + 1], k=2) for i in range(len(descs) - 1)]
 
 
-def _get_good_points(all_matches, ratio=0.2):
+def _get_good_points(all_matches, ratio=0.8):
     """
     Filter only images which uphold Lowe's ratio test.
     :return: An array of all relevant matches alongside Lowe's ratio (array of couples).
@@ -35,7 +35,7 @@ def _get_good_points(all_matches, ratio=0.2):
             all_matches]
 
 
-def _filter_by_max_amount(arr, k=10):
+def _filter_by_max_amount(arr, k=50):
     """
     Get top 10 matches for every 2 images.
     """
@@ -69,6 +69,6 @@ def detect_anchors(images):
 
 
 if __name__ == '__main__':
-    paths = ['images/1.jpg', 'images/2.jpg', 'images/3.jpg']
+    paths = ['imgs/1.jpg', 'imgs/2.jpg', 'imgs/3.jpg']
     images = [cv2.imread(path)[..., ::-1] for path in paths]
     res = detect_anchors(images)

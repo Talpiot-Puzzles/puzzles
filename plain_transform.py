@@ -37,6 +37,7 @@ def find_homography(src_pts, dst_pts):
     return homograph_matrix
 
 def extract_movement_from_homography(homography):
+    print(homography)
     # Extract the rotation matrix and translation vector from the homography matrix
     R = homography[:, :2]
     t = homography[:2, 2]
@@ -118,7 +119,7 @@ def find_relative_movement(adjacent_movement):
                             [(x_d_i, y_d_i, rotation_i]
     """
     adjacent_movement = np.array(adjacent_movement)
-    relative_movement = np.cumsum(adjacent_movement, axis=1)
+    relative_movement = np.cumsum(adjacent_movement, axis=0)
     # relative_movement[2, :] = relative_movement[2, :] % DEGREES_IN_CIRCLE
     relative_movement[:, 2] = relative_movement[:, 2] % DEGREES_IN_CIRCLE
 
