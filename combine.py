@@ -230,6 +230,16 @@ def preprocess_combine(shifted_images: List[Tuple[np.ndarray, Tuple[float, float
 # Combine process functions:
 # ===================================
 
+def simple_mean(overlap_img):
+    # overlap_img = np.array(overlap_img)
+    counter = (overlap_img == 0).sum(axis=-1)
+    summed = overlap_img.sum(axis=-1)
+    res = summed / (overlap_img.shape[-1] - counter)
+
+    res = np.where(res == np.inf, 0, res)
+
+    return Image.fromarray(res).convert('RGB')
+
 def milo_simple_mean(overlap_img: np.ndarray, ws: np.ndarray) -> Image:
     """
     Applies the Milo Simple Mean fusion algorithm to an overlap image.
@@ -252,6 +262,20 @@ def milo_simple_mean(overlap_img: np.ndarray, ws: np.ndarray) -> Image:
     res = np.nan_to_num(res, nan=0)
 
     return Image.fromarray(res.astype(np.uint8)).convert('RGB')
+
+# def milomilo_simple_mean(overlap_img):
+#     alpha = 1.15
+#     padded = np.pad(overlap_img, ((0, 0), (1, 1), (1, 1)))
+#     overlap_img -= np.apply_along_axis(close_mean)
+#     counter = (overlap_img == 0).sum(axis=-1)
+#     to_mean = np.power(overlap_img, 1 / alpha)
+#     summed = to_mean.sum(axis=-1)
+#     summed = np.power(summed, alpha)
+#     res = summed / (overlap_img.shape[-1] - counter)
+#
+#     res = np.where(res == np.inf, 0, res)
+#
+#     return Image.fromarray(res).convert('RGB')
 
 def calculate_position_in_combine_image(shift: Tuple[int, int], m_image_position: Dict[str, int]) -> Tuple[int, int]:
     """
