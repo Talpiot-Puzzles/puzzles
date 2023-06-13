@@ -311,31 +311,30 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessibl
 
 # TODO: make the averaging weighted in favour of white pixles
 if __name__ == '__main__':
-    # start_time = datetime.datetime.now()
-
-    # Example usage
     dist_coef = -5.15e-5
-    anchor_height = 50.5
-    ground_height = 50
 
-    # input_path = r'C:\Users\t9146472\Documents\third_run.MP4'
     input_path = r"C:\Users\t9146472\Documents\61.MP4"
     is_video = True
-    crop_from_frame = 13
     start_time = (0 * 60 + 10)
     duration = 1
+
     distort_filter = True
     crop_filter = True
     stretch_histogram = True
-    split_factor = 1
+    crop_from_frame = 13
     contrast_factor = 10
-    name = "test2"
-    save_images = True
+    split_factor = 1
+
+    anchor_height = 50.5
+    ground_height = 50
     num_of_layers = 3
     layer_thickness = 0.5
 
+    name = "test2"
     res_path = r".\results"
     img_path = r".\data"
+    save_images = True
+
     if not os.path.exists(img_path):
         os.makedirs(img_path)
     if not os.path.exists(res_path):
