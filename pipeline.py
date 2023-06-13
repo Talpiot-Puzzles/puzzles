@@ -1,6 +1,6 @@
-import time
+import math
 import os
-import shutil
+import time
 
 import cv2
 import numpy as np
@@ -11,10 +11,12 @@ import anchor_detection
 import combine
 import plain_transform
 
+
 def timeit(func):
     """
     Decorator for measuring function's running time.
     """
+
     def measure_time(*args, **kw):
         start_time = time.time()
         result = func(*args, **kw)
@@ -23,6 +25,7 @@ def timeit(func):
         return result
 
     return measure_time
+
 
 class Pipeline:
     def __init__(self, steps, pipeline_input=None, accessible_data=None):
@@ -39,16 +42,25 @@ class Pipeline:
             print(f"successfully run '{step_name}'")
         return data
 
+
 @timeit
 def capture_frames(path, start_time, duration):
     vidcap = cv2.VideoCapture(path)
     fps = vidcap.get(cv2.CAP_PROP_FPS)  # Get the frames per second (FPS) of the video
     start_frame = int(start_time * fps)  # Calculate the start frame based on the start time
-    end_frame = int((start_time + duration) * fps)  # Calculate the end frame based on the start time and duration
+    end_frame = int(
+        math.ceil((start_time + duration) * fps))  # Calculate the end frame based on the start time and duration
 
-    print(
-        f"{end_frame - start_frame} frames - {start_time // 60:02d}:{start_time % 60:02d} to {(start_time + duration) // 60:02d}:{(start_time + duration) % 60:02d}")
+    num_frames = end_frame - start_frame
+    start_seconds, start_ms = divmod(start_time, 1)
+    start_minutes, start_seconds = divmod(int(start_seconds), 60)
+    end_seconds, end_ms = divmod(start_time + duration, 1)
+    end_minutes, end_seconds = divmod(int(end_seconds), 60)
 
+    start_time_str = f"{start_minutes:02d}:{start_seconds:02d}.{int(start_ms * 1000):03d}"
+    end_time_str = f"{end_minutes:02d}:{end_seconds:02d}.{int(end_ms * 1000):03d}"
+
+    print(f"{num_frames} frames - {start_time_str} to {end_time_str}")
     # Set the initial frame to the start frame
     vidcap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
@@ -64,15 +76,24 @@ def capture_frames(path, start_time, duration):
     vidcap.release()
     return images
 
+
 def show_first_and_last_image_of_scan(images):
     fig, ax = plt.subplots(1, 2)
     ax[0].imshow(images[0])
     ax[1].imshow(images[-1])
     plt.show()
 
+
 # Step 1: Load images from directory
 @timeit
 def load_images(input_data, pipeline_data):
+    result = pipeline_data['result']
+    img_path = result['img_path']
+    if result['save_images']:
+        img_path = os.path.join(img_path, result['name'])
+        if not os.path.exists(img_path):
+            os.makedirs(img_path)
+
     if not input_data["is_video"]:
         image_dir = input_data["path"]
         image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if
@@ -81,21 +102,17 @@ def load_images(input_data, pipeline_data):
         image_paths = [image_paths[i] for i in range(230, 250)]
         images = [cv2.imread(path, cv2.IMREAD_GRAYSCALE) for path in image_paths]
         for i, img in enumerate(images):
-            Image.fromarray(img).save(f".\imgs\img{i}.jpg")
+            Image.fromarray(img).save(f"{img_path}\img{i}.jpg")
     else:
         path, start_time, duration = input_data['path'], input_data["start_time"], input_data["duration"]
         images = capture_frames(path, start_time, duration)
 
-    img_path = pipeline_data['result']['img_path']
     for i, img in enumerate(images):
         Image.fromarray(img).save(rf"{img_path}\img{i}.jpg")
 
     pipeline_data['images'] = images
-
     # show_first_and_last_image_of_scan(images)
-
     return images
-
 
 
 # Step 2: Preprocess images
@@ -203,11 +220,41 @@ def shift_images(shifts, pipeline_data):
         h_anchor += thickness
     return new_shifts
 
+# pretty print of pipeline data to configuration file
+def pretty_print_pipeline_data(pipeline_data):
+    res = ""
+    # remove images from the configuration file
+    pipeline_data = pipeline_data.copy()
+    pipeline_data['images'] = f"{len(pipeline_data['images'])} images"
+    for key, value in pipeline_data.items():
+        # handle subdictionaries
+        if isinstance(value, dict):
+            res += f"{key}:\n"
+            for subkey, subvalue in value.items():
+                res += f"\t{subkey}: {subvalue}\n"
+        else:
+            res += f"{key}: {value}\n"
+        res += "\n"
+    return res
+
+
 
 # Step 6: Combine images
 @timeit
 def combine_images(shifts, pipeline_data):
     filters = pipeline_data["filters"]
+    path, name = pipeline_data['result']['path'], pipeline_data['result']['name']
+    res_path = os.path.join(path, name)
+    if not os.path.exists(res_path):
+        os.makedirs(res_path)
+    else:
+        res_path = os.path.join(path, name + "+")
+        os.makedirs(res_path)
+
+    # create a file that documents the configurations of the pipeline without the images
+    with open(os.path.join(res_path, "config.txt"), "w") as f:
+        f.write(pretty_print_pipeline_data(pipeline_data))
+
     combined_images = []
     for i, shifts_group in enumerate(shifts):
         print(f"layer number {i}")
@@ -215,9 +262,9 @@ def combine_images(shifts, pipeline_data):
         shifts_group = np.insert(shifts_group, 0, [0, 0, 0], axis=0)
         # print(shifts_group)
         shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts_group)]
-        combined_image = combine.smart_combine_images(shifted_images,filters)
-        path, name = pipeline_data['result']['path'], pipeline_data['result']['name']
-        combined_image.save(rf"{path}\{name}{i}.jpg")
+        combined_image = combine.smart_combine_images(shifted_images, filters)
+
+        combined_image.save(rf"{res_path}\res{i}.jpg")
         combined_images.append(combined_image)
     return combined_images
 
@@ -268,42 +315,45 @@ if __name__ == '__main__':
 
     # Example usage
     dist_coef = -5.15e-5
-    anchor_height = 51.5
+    anchor_height = 50.5
     ground_height = 50
 
     # input_path = r'C:\Users\t9146472\Documents\third_run.MP4'
     input_path = r"C:\Users\t9146472\Documents\61.MP4"
     is_video = True
     crop_from_frame = 13
-    start_time = (0 * 60 + 37)
-    duration = 3
+    start_time = (0 * 60 + 10)
+    duration = 1
     distort_filter = True
     crop_filter = True
     stretch_histogram = True
-    split_factor = 3
+    split_factor = 1
     contrast_factor = 10
-    name = "61_focused51.5_contrast10_split3"
-    num_of_layers = 1
+    name = "test2"
+    save_images = True
+    num_of_layers = 3
     layer_thickness = 0.5
 
-    res_path = r".\res"
-    img_path = r".\imgs"
-    # shutil.rmtree(img_path)
-    # os.mkdir(img_path)
+    res_path = r".\results"
+    img_path = r".\data"
+    if not os.path.exists(img_path):
+        os.makedirs(img_path)
+    if not os.path.exists(res_path):
+        os.makedirs(res_path)
 
     input_data = {'path': input_path, "is_video": is_video, "start_time": start_time, "duration": duration}
     accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter, 'dist_coef': dist_coef,
                                    'crop_from_frame': crop_from_frame, 'stretch': stretch_histogram,
                                    'contrast_factor': contrast_factor, 'min_val': 0, 'max_val': 255,
                                    'split_factor': split_factor},
-                       'result': {'path': res_path, 'img_path': img_path, 'name': name},
+                       'result': {'path': res_path, 'img_path': img_path, 'name': name, 'save_images': save_images},
                        'heights': {'anchor': anchor_height, 'ground': ground_height, 'layers_around': num_of_layers,
-                                   'layer_thickness': layer_thickness}}
+                                   'layer_thickness': layer_thickness},
+                       'input_data': input_data}
     p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data,
                       accessible_data=accessible_data)
     output_data = p.run()
     print(output_data)
-
 
     # end_time = datetime.datetime.now()
     # elapsed_time = end_time - start_time
