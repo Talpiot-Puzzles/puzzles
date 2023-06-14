@@ -61,7 +61,7 @@ def load_images(input_data, pipeline_data):
 def preprocess_images(images, pipeline_data):
     height, width = images[0].shape
     filters = pipeline_data["filters"]
-    crop_from_frame = filters['crop_from_frame']
+    crop_from_frame = float(1/filters['crop_from_frame'])
     barrel_coef = filters["dist_coef"]
 
     map1, map2 = compute_maps(width, height, barrel_coef)
@@ -183,9 +183,8 @@ if __name__ == '__main__':
     duration = 1
 
     distort_filter = True
-    crop_filter = True
+    crop_filter = 0.1
     stretch_histogram = True
-    crop_from_frame = 13
     contrast_factor = 10
     split_factor = 1
 
@@ -206,7 +205,7 @@ if __name__ == '__main__':
 
     input_data = {'path': input_path, "is_video": is_video, "start_time": start_time, "duration": duration}
     accessible_data = {'filters': {'crop': crop_filter, 'distortion': distort_filter, 'dist_coef': dist_coef,
-                                   'crop_from_frame': crop_from_frame, 'stretch': stretch_histogram,
+                                   'stretch': stretch_histogram,
                                    'contrast_factor': contrast_factor, 'min_val': 0, 'max_val': 255,
                                    'split_factor': split_factor},
                        'result': {'path': res_path, 'img_path': img_path, 'name': name, 'save_images': save_images},
