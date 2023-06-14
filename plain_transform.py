@@ -37,7 +37,7 @@ def find_homography(src_pts, dst_pts):
     return homograph_matrix
 
 def extract_movement_from_homography(homography):
-    print(homography)
+    # print(homography)
     # Extract the rotation matrix and translation vector from the homography matrix
     R = homography[:, :2]
     t = homography[:2, 2]
