@@ -7,9 +7,8 @@
     },
 
     "filters": {
-        "crop_filter": true,
+        "crop_filter": 0.1,
         "distort_filter": true,
-        "crop_from_frame": 13,
         "stretch_histogram": true,
         "contrast_factor": 10,
         "split_factor": 1
