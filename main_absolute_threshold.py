@@ -103,14 +103,12 @@ def get_cluster_bounding_rectangle(cluster, contours):
     return (min_x - n, min_y - n), (max_x + n, max_y + n)
 
 
-def detect(img_path: str):
-    image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    image = cv2.bitwise_not(image)
+def detect(img):
+    image = cv2.bitwise_not(img)
     print(np.max(image))
     ret, image = cv2.threshold(image, THRESHOLD, 255, cv2.THRESH_TRUNC)
-    ret, imageb = cv2.threshold(cv2.imread(img_path, cv2.IMREAD_GRAYSCALE), THRESHOLD, 255, cv2.THRESH_BINARY)
+    ret, imageb = cv2.threshold(img, THRESHOLD, 255, cv2.THRESH_BINARY)
     #imgain = image  # cv2.imread(img_path)
-    imgain = cv2.imread(img_path)
     # mask = cv2.inRange(image, 140, 141)
     # image[mask > 0] = 255
     contours, hierarchy = cv2.findContours(imageb, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -118,7 +116,7 @@ def detect(img_path: str):
     combinos = combine_contours(contours)
     cluster = max(combinos, key=lambda clus: rate_cluster(clus, image, contours))
     top_left_corner, bottom_right_corner = get_cluster_bounding_rectangle(cluster, contours)
-    imgain = cv2.rectangle(imgain, top_left_corner, bottom_right_corner, (0, 255, 0), 2)
+    imgain = cv2.rectangle(img, top_left_corner, bottom_right_corner, (0, 255, 0), 2)
     imdraw = imgain
     #imdraw = cv2.resize(imdraw, (1200, 700))
     #imdraw = cv2.bitwise_not(imdraw)

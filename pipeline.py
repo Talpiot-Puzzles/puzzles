@@ -10,6 +10,7 @@ from PIL import Image
 import anchor_detection
 import combine
 import plain_transform
+from main_absolute_threshold import detect
 from utils import make_dir_handle_duplicate_name, timeit, capture_frames, pretty_print_pipeline_data, compute_maps, \
     undistort, crop
 from plain_movement import calculate_shifts_for_layers
@@ -137,15 +138,17 @@ def combine_images(shifts, pipeline_data):
 
         combined_image.save(rf"{res_path}\res{i}.jpg")
         combined_images.append(combined_image)
+
+    pipeline_data['results_path'] = res_path
     return combined_images
 
 
 # Step 7: Object detection
 @timeit
-def detect_objects(combined_image):
-    # labeled_image = detect_objects_in_image(combined_image, images)
-    # return labeled_image
-    return combined_image
+def detect_objects(combined_image, pipeline_data):
+    labeled = detect(combined_image)
+    labeled.save(rf"{pipeline_data['results_path']}\labeled.jpg")
+    return labeled
 
 
 def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessible_data=None):
