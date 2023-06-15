@@ -9,9 +9,11 @@ from PIL import Image
 import anchor_detection
 import combine
 import plain_transform
-from plain_movement import calculate_shifts_for_layers
-from utils import make_dir_handle_duplicate_name, timeit, capture_frames, compute_maps, \
+from main_absolute_threshold import detect
+from utils import make_dir_handle_duplicate_name, timeit, capture_frames, pretty_print_pipeline_data, compute_maps, \
     undistort, crop, save_config_of_run
+from plain_movement import calculate_shifts_for_layers
+
 
 DIST_COEF = -5.15e-5
 
@@ -64,7 +66,7 @@ def load_images(input_data, pipeline_data):
 def preprocess_images(images, pipeline_data):
     height, width = images[0].shape
     filters = pipeline_data["filters"]
-    crop_size = int(1 / filters['crop_filter'])
+    crop_size = int(1/filters['crop_filter'])
     barrel_coef = DIST_COEF
 
     map1, map2 = compute_maps(width, height, barrel_coef)
@@ -125,25 +127,26 @@ def combine_images(shifts, pipeline_data):
         shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts_group)]
         combined_image = combine.smart_combine_images(shifted_images, filters)
         combined_images.append(combined_image)
+    pipeline_data['combined_images'] = combined_images
     return combined_images
 
 
 # Step 7: Object detection
 @timeit
 def detect_objects(combined_image, pipeline_data):
-    # labeled_image = detect_objects_in_image(combined_image, images)
-    # return labeled_image
-    images_to_save = combined_image
-    return images_to_save
+    return [detect(img) for img in combined_image]
+
 
 
 # Step 8: Save images
 @timeit
-def save(images_to_save, pipeline_data):
+def save(labeled, pipeline_data):
+    images_to_save = pipeline_data.pop('combined_images')
     path, name = pipeline_data['result']['res_path'], pipeline_data['result']['name']
     res_path = make_dir_handle_duplicate_name(path, name)
-    for i, images_to_save in enumerate(images_to_save):
-        images_to_save.save(rf"{res_path}\res{i}.jpg")
+    for i, (image_to_save, labeled_img) in enumerate(zip(images_to_save, labeled)):
+        image_to_save.save(rf"{res_path}\res{i}.jpg")
+        labeled_img.save(f"{res_path}/labeled{i}.jpg")
     save_config_of_run(pipeline_data, res_path)
 
     return f"saved {len(images_to_save)} images to {res_path} for {name}"

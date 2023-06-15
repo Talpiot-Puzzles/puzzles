@@ -261,7 +261,7 @@ def milo_simple_mean(overlap_img: np.ndarray, ws: np.ndarray) -> Image:
     res = np.divide(summed, ws, where=ws != 0)
     res = np.nan_to_num(res, nan=0)
 
-    return Image.fromarray(res.astype(np.uint8)).convert('RGB')
+    return Image.fromarray(res.astype(np.uint8))
 
 # def milomilo_simple_mean(overlap_img):
 #     alpha = 1.15
