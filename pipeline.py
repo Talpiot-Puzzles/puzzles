@@ -11,7 +11,7 @@ import anchor_detection
 import combine
 import plain_transform
 from utils import make_dir_handle_duplicate_name, timeit, capture_frames, pretty_print_pipeline_data, compute_maps, \
-    undistort, crop
+    undistort, crop, save_config_of_run
 from plain_movement import calculate_shifts_for_layers
 
 
@@ -66,16 +66,16 @@ def load_images(input_data, pipeline_data):
 def preprocess_images(images, pipeline_data):
     height, width = images[0].shape
     filters = pipeline_data["filters"]
-    crop_from_frame = float(1/filters['crop_from_frame'])
+    crop_size = int(1/filters['crop_filter'])
     barrel_coef = DIST_COEF
 
     map1, map2 = compute_maps(width, height, barrel_coef)
 
     preprocessed_images = images
     if filters["distort_filter"]:
-        preprocessed_images = [undistort(image) for image in preprocessed_images]
+        preprocessed_images = [undistort(image, map1, map2) for image in preprocessed_images]
     if filters["crop_filter"]:
-        preprocessed_images = [crop(image) for image in preprocessed_images]
+        preprocessed_images = [crop(image,crop_size) for image in preprocessed_images]
     if filters["stretch_histogram"]:
         min_value = np.min(images)
         max_value = np.max(images)
@@ -97,13 +97,12 @@ def detect_anchors(preprocessed_images, pipeline_data):
 @timeit
 def connect_images(anchors, pipeline_data):
     to_use = [[anchors[i], anchors[i + 1]] for i in range(0, len(anchors) - 1, 2)]
-    return plain_transform.plain_transform(to_use)
+    return plain_transform.transform_plain(to_use)
 
 
 # Step 5: Shift images
 @timeit
 def shift_images(shifts, pipeline_data):
-    new_shifts = []
     h_anchor, h_ground = pipeline_data["heights"]["anchor_height"], pipeline_data["heights"]["ground_height"]
     layers_num = pipeline_data["heights"]["num_of_layers"]
     thickness = pipeline_data["heights"]["layer_thickness"]
@@ -118,15 +117,10 @@ def shift_images(shifts, pipeline_data):
 @timeit
 def combine_images(shifts, pipeline_data):
     filters = pipeline_data["filters"]
+    images = pipeline_data.pop('images')
+
     path, name = pipeline_data['result']['res_path'], pipeline_data['result']['name']
     res_path = make_dir_handle_duplicate_name(path, name)
-
-    # create a file that documents the configurations of the pipeline without the images
-    images = pipeline_data.pop('images')
-    with open(os.path.join(res_path, "config.json"), 'w') as f:
-        json.dump(pipeline_data, f, indent=4)
-    # with open(os.path.join(res_path, "config.txt"), "w") as f:
-    #     f.write(pretty_print_pipeline_data(pipeline_data))
 
     combined_images = []
     for i, shifts_group in enumerate(shifts):
@@ -138,7 +132,9 @@ def combine_images(shifts, pipeline_data):
 
         combined_image.save(rf"{res_path}\res{i}.jpg")
         combined_images.append(combined_image)
+    save_config_of_run(pipeline_data, res_path)
     return combined_images
+
 
 
 # Step 7: Object detection

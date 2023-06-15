@@ -1,3 +1,4 @@
+import json
 import math
 import os
 import time
@@ -86,6 +87,11 @@ def pretty_print_pipeline_data(pipeline_data):
             res += f"{key}: {value}\n"
         res += "\n"
     return res
+
+def save_config_of_run(pipeline_data, res_path):
+    # create a file that documents the configurations of the pipeline without the images
+    with open(os.path.join(res_path, "config.json"), 'w') as f:
+        json.dump(pipeline_data, f, indent=4)
 
 # for preprocessing: undistort and crop
 

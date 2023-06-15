@@ -22,7 +22,7 @@
     },
 
     "result": {
-        "name": "test",
+        "name": "testo",
         "res_path": "./results",
         "img_path": "./data",
         "save_images": true
