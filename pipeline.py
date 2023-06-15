@@ -1,6 +1,5 @@
 import argparse
 import json
-import math
 import os
 
 import cv2
@@ -10,10 +9,9 @@ from PIL import Image
 import anchor_detection
 import combine
 import plain_transform
-from utils import make_dir_handle_duplicate_name, timeit, capture_frames, pretty_print_pipeline_data, compute_maps, \
-    undistort, crop, save_config_of_run
 from plain_movement import calculate_shifts_for_layers
-
+from utils import make_dir_handle_duplicate_name, timeit, capture_frames, compute_maps, \
+    undistort, crop, save_config_of_run
 
 DIST_COEF = -5.15e-5
 
@@ -66,7 +64,7 @@ def load_images(input_data, pipeline_data):
 def preprocess_images(images, pipeline_data):
     height, width = images[0].shape
     filters = pipeline_data["filters"]
-    crop_size = int(1/filters['crop_filter'])
+    crop_size = int(1 / filters['crop_filter'])
     barrel_coef = DIST_COEF
 
     map1, map2 = compute_maps(width, height, barrel_coef)
@@ -75,7 +73,7 @@ def preprocess_images(images, pipeline_data):
     if filters["distort_filter"]:
         preprocessed_images = [undistort(image, map1, map2) for image in preprocessed_images]
     if filters["crop_filter"]:
-        preprocessed_images = [crop(image,crop_size) for image in preprocessed_images]
+        preprocessed_images = [crop(image, crop_size) for image in preprocessed_images]
     if filters["stretch_histogram"]:
         min_value = np.min(images)
         max_value = np.max(images)
@@ -130,7 +128,6 @@ def combine_images(shifts, pipeline_data):
     return combined_images
 
 
-
 # Step 7: Object detection
 @timeit
 def detect_objects(combined_image, pipeline_data):
@@ -138,6 +135,7 @@ def detect_objects(combined_image, pipeline_data):
     # return labeled_image
     images_to_save = combined_image
     return images_to_save
+
 
 # Step 8: Save images
 @timeit
@@ -149,6 +147,7 @@ def save(images_to_save, pipeline_data):
     save_config_of_run(pipeline_data, res_path)
 
     return f"saved {len(images_to_save)} images to {res_path} for {name}"
+
 
 def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessible_data=None):
     # Define the full pipeline
@@ -196,7 +195,6 @@ def main(config):
                       accessible_data=accessible_data)
     output_data = p.run()
     print(output_data)
-
 
 
 # TODO: make the averaging weighted in favour of white pixles
