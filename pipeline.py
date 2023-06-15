@@ -128,7 +128,7 @@ def combine_images(shifts, pipeline_data):
         shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts_group)]
         combined_image = combine.smart_combine_images(shifted_images, filters)
         combined_images.append(combined_image)
-    pipeline_data['combined_images'] = combined_image
+    pipeline_data['combined_images'] = combined_images
     return combined_images
 
 
@@ -136,7 +136,7 @@ def combine_images(shifts, pipeline_data):
 # Step 7: Object detection
 @timeit
 def detect_objects(combined_image, pipeline_data):
-    return detect(combined_image)
+    return [detect(img) for img in combined_image]
 
 
 # Step 8: Save images
@@ -145,11 +145,11 @@ def save(labeled, pipeline_data):
     images_to_save = pipeline_data.pop('combined_images')
     path, name = pipeline_data['result']['res_path'], pipeline_data['result']['name']
     res_path = make_dir_handle_duplicate_name(path, name)
-    for i, images_to_save in enumerate(images_to_save):
-        images_to_save.save(rf"{res_path}\res{i}.jpg")
+    for i, (image_to_save, labeled_img) in enumerate(zip(images_to_save, labeled)):
+        image_to_save.save(rf"{res_path}\res{i}.jpg")
+        labeled_img.save(f"{res_path}/labeled{i}.jpg")
     save_config_of_run(pipeline_data, res_path)
 
-    labeled.save(f"{res_path}/labeled.jpg")
     return f"saved {len(images_to_save)} images to {res_path} for {name}"
 
 def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessible_data=None):
