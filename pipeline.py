@@ -119,9 +119,6 @@ def combine_images(shifts, pipeline_data):
     filters = pipeline_data["filters"]
     images = pipeline_data.pop('images')
 
-    path, name = pipeline_data['result']['res_path'], pipeline_data['result']['name']
-    res_path = make_dir_handle_duplicate_name(path, name)
-
     combined_images = []
     for i, shifts_group in enumerate(shifts):
         print(f"layer number {i}")
@@ -129,21 +126,29 @@ def combine_images(shifts, pipeline_data):
         shifts_group = np.insert(shifts_group, 0, [0, 0, 0], axis=0)
         shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts_group)]
         combined_image = combine.smart_combine_images(shifted_images, filters)
-
-        combined_image.save(rf"{res_path}\res{i}.jpg")
         combined_images.append(combined_image)
-    save_config_of_run(pipeline_data, res_path)
     return combined_images
 
 
 
 # Step 7: Object detection
 @timeit
-def detect_objects(combined_image):
+def detect_objects(combined_image, pipeline_data):
     # labeled_image = detect_objects_in_image(combined_image, images)
     # return labeled_image
-    return combined_image
+    images_to_save = combined_image
+    return images_to_save
 
+# Step 8: Save images
+@timeit
+def save(images_to_save, pipeline_data):
+    path, name = pipeline_data['result']['res_path'], pipeline_data['result']['name']
+    res_path = make_dir_handle_duplicate_name(path, name)
+    for i, images_to_save in enumerate(images_to_save):
+        images_to_save.save(rf"{res_path}\res{i}.jpg")
+    save_config_of_run(pipeline_data, res_path)
+
+    return f"saved {len(images_to_save)} images to {res_path} for {name}"
 
 def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessible_data=None):
     # Define the full pipeline
@@ -154,7 +159,8 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessibl
         ('connect_images', connect_images),
         ('shift_images', shift_images),
         ('combine_images', combine_images),
-        ('detect_objects', detect_objects)]
+        ('detect_objects', detect_objects),
+        ('save', save)]
 
     # Get the start and end indices of the pipeline
     if start_step is not None:
@@ -186,7 +192,7 @@ def main(config):
                        'result': config['result'],
                        'heights': config['heights'],
                        'input_data': input_data}
-    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data,
+    p = make_pipeline(start_step='load_images', end_step='save', pipeline_input=input_data,
                       accessible_data=accessible_data)
     output_data = p.run()
     print(output_data)
