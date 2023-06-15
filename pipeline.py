@@ -12,7 +12,7 @@ import combine
 import plain_transform
 from main_absolute_threshold import detect
 from utils import make_dir_handle_duplicate_name, timeit, capture_frames, pretty_print_pipeline_data, compute_maps, \
-    undistort, crop
+    undistort, crop, save_config_of_run
 from plain_movement import calculate_shifts_for_layers
 
 
@@ -67,16 +67,16 @@ def load_images(input_data, pipeline_data):
 def preprocess_images(images, pipeline_data):
     height, width = images[0].shape
     filters = pipeline_data["filters"]
-    crop_from_frame = filters['crop_from_frame']
+    crop_size = int(1/filters['crop_filter'])
     barrel_coef = DIST_COEF
 
     map1, map2 = compute_maps(width, height, barrel_coef)
 
     preprocessed_images = images
     if filters["distort_filter"]:
-        preprocessed_images = [undistort(image) for image in preprocessed_images]
+        preprocessed_images = [undistort(image, map1, map2) for image in preprocessed_images]
     if filters["crop_filter"]:
-        preprocessed_images = [crop(image) for image in preprocessed_images]
+        preprocessed_images = [crop(image,crop_size) for image in preprocessed_images]
     if filters["stretch_histogram"]:
         min_value = np.min(images)
         max_value = np.max(images)
@@ -98,13 +98,12 @@ def detect_anchors(preprocessed_images, pipeline_data):
 @timeit
 def connect_images(anchors, pipeline_data):
     to_use = [[anchors[i], anchors[i + 1]] for i in range(0, len(anchors) - 1, 2)]
-    return plain_transform.plain_transform(to_use)
+    return plain_transform.transform_plain(to_use)
 
 
 # Step 5: Shift images
 @timeit
 def shift_images(shifts, pipeline_data):
-    new_shifts = []
     h_anchor, h_ground = pipeline_data["heights"]["anchor_height"], pipeline_data["heights"]["ground_height"]
     layers_num = pipeline_data["heights"]["num_of_layers"]
     thickness = pipeline_data["heights"]["layer_thickness"]
@@ -119,37 +118,39 @@ def shift_images(shifts, pipeline_data):
 @timeit
 def combine_images(shifts, pipeline_data):
     filters = pipeline_data["filters"]
-    path, name = pipeline_data['result']['res_path'], pipeline_data['result']['name']
-    res_path = make_dir_handle_duplicate_name(path, name)
-
-    # create a file that documents the configurations of the pipeline without the images
     images = pipeline_data.pop('images')
-    with open(os.path.join(res_path, "config.json"), 'w') as f:
-        json.dump(pipeline_data, f, indent=4)
-    # with open(os.path.join(res_path, "config.txt"), "w") as f:
-    #     f.write(pretty_print_pipeline_data(pipeline_data))
 
     combined_images = []
     for i, shifts_group in enumerate(shifts):
         print(f"layer number {i}")
+        # insert (0, 0, 0) so that the first image will not be shifted
         shifts_group = np.insert(shifts_group, 0, [0, 0, 0], axis=0)
         shifted_images = [(image, (*shifted, 0)) for image, shifted in zip(images, shifts_group)]
         combined_image = combine.smart_combine_images(shifted_images, filters)
-
-        combined_image.save(rf"{res_path}\res{i}.jpg")
         combined_images.append(combined_image)
-
-    pipeline_data['results_path'] = res_path
+    pipeline_data['combined_images'] = combined_image
     return combined_images
+
 
 
 # Step 7: Object detection
 @timeit
 def detect_objects(combined_image, pipeline_data):
-    labeled = detect(combined_image)
-    labeled.save(rf"{pipeline_data['results_path']}\labeled.jpg")
-    return labeled
+    return detect(combined_image)
 
+
+# Step 8: Save images
+@timeit
+def save(labeled, pipeline_data):
+    images_to_save = pipeline_data.pop('combined_images')
+    path, name = pipeline_data['result']['res_path'], pipeline_data['result']['name']
+    res_path = make_dir_handle_duplicate_name(path, name)
+    for i, images_to_save in enumerate(images_to_save):
+        images_to_save.save(rf"{res_path}\res{i}.jpg")
+    save_config_of_run(pipeline_data, res_path)
+
+    labeled.save(f"{res_path}/labeled.jpg")
+    return f"saved {len(images_to_save)} images to {res_path} for {name}"
 
 def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessible_data=None):
     # Define the full pipeline
@@ -160,7 +161,8 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessibl
         ('connect_images', connect_images),
         ('shift_images', shift_images),
         ('combine_images', combine_images),
-        ('detect_objects', detect_objects)]
+        ('detect_objects', detect_objects),
+        ('save', save)]
 
     # Get the start and end indices of the pipeline
     if start_step is not None:
@@ -188,11 +190,11 @@ def main(config):
     os.makedirs(config['result']['res_path'], exist_ok=True)
 
     input_data = config['input_data']
-    accessible_data = {'filters': dict(**config['filters'], min_val=0, max_val=355),
+    accessible_data = {'filters': dict(**config['filters'], min_val=0, max_val=255),
                        'result': config['result'],
                        'heights': config['heights'],
                        'input_data': input_data}
-    p = make_pipeline(start_step='load_images', end_step='combine_images', pipeline_input=input_data,
+    p = make_pipeline(start_step='load_images', end_step='save', pipeline_input=input_data,
                       accessible_data=accessible_data)
     output_data = p.run()
     print(output_data)
