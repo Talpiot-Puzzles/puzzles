@@ -49,11 +49,8 @@ def _prepare_images_to_draw(kps, chosen):
     points_to_draw = [[] for _ in range(2 * (len(kps) - 1))]
 
     for i in range(0, 2 * (len(kps) - 1), 2):
-        ps = [kps[i // 2][el.queryIdx].pt for el in chosen[i // 2]]
-        points_to_draw[i] = ps
-
-        ps = [kps[i // 2 + 1][el.trainIdx].pt for el in chosen[i // 2]]
-        points_to_draw[i + 1] = ps
+        points_to_draw[i] = [kps[i // 2][el.queryIdx].pt for el in chosen[i // 2]]
+        points_to_draw[i + 1] = [kps[i // 2 + 1][el.trainIdx].pt for el in chosen[i // 2]]
 
     return points_to_draw
 
