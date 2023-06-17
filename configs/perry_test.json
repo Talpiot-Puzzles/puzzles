@@ -1,30 +1,31 @@
 {
     "input_data": {
-        "input_path": "C:Users/t9146472/Documents/61.MP4",
+        "input_path": "C:/Users/t9146472/Documents/61.MP4",
         "is_video": true,
-        "start_time": 10,
-        "duration": 1
+        "start_time": 37,
+        "duration": 2,
+        "max_images": 4
     },
 
     "filters": {
         "crop_filter": 0.1,
         "distort_filter": true,
         "stretch_histogram": true,
-        "contrast_factor": 10,
-        "split_factor": 1
+        "contrast_factor": 1,
+        "split_factor": 3
     },
 
     "heights": {
-        "anchor_height": 50.5,
+        "anchor_height": 48.5,
         "ground_height": 50,
-        "num_of_layers": 3,
+        "num_of_layers": 1,
         "layer_thickness": 0.5
     },
 
     "result": {
-        "name": "testo",
+        "name": "for_split",
         "res_path": "./results",
         "img_path": "./data",
-        "save_images": true
+        "save_images": false
     }
 }

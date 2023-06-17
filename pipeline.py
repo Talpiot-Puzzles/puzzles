@@ -44,9 +44,9 @@ def load_images(input_data, pipeline_data):
         os.makedirs(images_path, exist_ok=True)
 
     if not input_data["is_video"]:
-        image_dir = input_data["path"]
+        image_dir = input_data["input_path"]
         image_paths = [os.path.join(image_dir, f) for f in os.listdir(image_dir) if
-                       f.endswith(".png") or f.endswith('.jpg')]
+                       f.endswith(".png") or f.endswith('.jpg')][1:input_data["max_images"]]
         images = [cv2.imread(path, cv2.IMREAD_GRAYSCALE) for path in image_paths]
         for i, img in enumerate(images):
             Image.fromarray(img).save(f"{images_path}\img{i}.jpg")
@@ -95,14 +95,14 @@ def detect_anchors(preprocessed_images, pipeline_data):
 
 # Step 4: Connect images
 @timeit
-def connect_images(anchors, pipeline_data):
+def align_images(anchors, pipeline_data):
     to_use = [[anchors[i], anchors[i + 1]] for i in range(0, len(anchors) - 1, 2)]
     return plain_transform.transform_plain(to_use)
 
 
 # Step 5: Shift images
 @timeit
-def shift_images(shifts, pipeline_data):
+def shift_focus_plain(shifts, pipeline_data):
     h_anchor, h_ground = pipeline_data["heights"]["anchor_height"], pipeline_data["heights"]["ground_height"]
     layers_num = pipeline_data["heights"]["num_of_layers"]
     thickness = pipeline_data["heights"]["layer_thickness"]
@@ -134,19 +134,19 @@ def combine_images(shifts, pipeline_data):
 # Step 7: Object detection
 @timeit
 def detect_objects(combined_image, pipeline_data):
-    return [detect(img) for img in combined_image]
-
+    # return [detect(img) for img in combined_image]
+    return [img for img in combined_image]
 
 
 # Step 8: Save images
 @timeit
-def save(labeled, pipeline_data):
+def save_output(labeled, pipeline_data):
     images_to_save = pipeline_data.pop('combined_images')
     path, name = pipeline_data['result']['res_path'], pipeline_data['result']['name']
     res_path = make_dir_handle_duplicate_name(path, name)
     for i, (image_to_save, labeled_img) in enumerate(zip(images_to_save, labeled)):
-        image_to_save.save(rf"{res_path}\res{i}.jpg")
-        labeled_img.save(f"{res_path}/labeled{i}.jpg")
+        image_to_save.save_output(rf"{res_path}\res{i}.jpg")
+        labeled_img.save_output(f"{res_path}/labeled{i}.jpg")
     save_config_of_run(pipeline_data, res_path)
 
     return f"saved {len(images_to_save)} images to {res_path} for {name}"
@@ -158,11 +158,11 @@ def make_pipeline(start_step=None, end_step=None, pipeline_input=None, accessibl
         ('load_images', load_images),
         ('preprocess_images', preprocess_images),
         ('detect_anchors', detect_anchors),
-        ('connect_images', connect_images),
-        ('shift_images', shift_images),
+        ('connect_images', align_images),
+        ('shift_images', shift_focus_plain),
         ('combine_images', combine_images),
         ('detect_objects', detect_objects),
-        ('save', save)]
+        ('save', save_output)]
 
     # Get the start and end indices of the pipeline
     if start_step is not None:

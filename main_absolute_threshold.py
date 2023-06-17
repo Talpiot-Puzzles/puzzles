@@ -39,7 +39,7 @@ def combine_contours(contours):
     while not contour_queue.empty():
         area, index = contour_queue.get()
         area = -area
-        print(i)
+        # print(i)
         i += 1
         if area < largest_size * CONTOUR_SIZE_RATIO:
             break
@@ -106,9 +106,10 @@ def get_cluster_bounding_rectangle(cluster, contours):
 def detect(img):
     img = np.asarray(img)
     image = cv2.bitwise_not(img)
-    print(np.max(image))
-    ret, image = cv2.threshold(image, THRESHOLD, 255, cv2.THRESH_TRUNC)
-    ret, imageb = cv2.threshold(img, THRESHOLD, 255, cv2.THRESH_BINARY)
+    imageb  = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 101, 50)
+    # print(np.max(image))
+    # ret, image = cv2.threshold(image, THRESHOLD, 255, cv2.THRESH_TRUNC)
+    # ret, imageb = cv2.threshold(img, THRESHOLD, 255, cv2.THRESH_BINARY)
     #imgain = image  # cv2.imread(img_path)
     # mask = cv2.inRange(image, 140, 141)
     # image[mask > 0] = 255
@@ -135,6 +136,7 @@ def detect(img):
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    detect(r'C:\Users\Administrator\Documents\4th term\puzzel\pycharm_project\imgs\img47.jpg')
+    # detect(r'results/egoz_461/res0.jpg')
+    pass
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
