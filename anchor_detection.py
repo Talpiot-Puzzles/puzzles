@@ -26,7 +26,7 @@ def _get_all_matches(descs, flann=None):
     return [flann.knnMatch(descs[i], descs[i + 1], k=2) for i in range(len(descs) - 1)]
 
 
-def _get_good_points(all_matches, ratio=0.2):
+def _get_good_points(all_matches, ratio=0.8):
     """
     Filter only images which uphold Lowe's ratio test.
     :return: An array of all relevant matches alongside Lowe's ratio (array of couples).
@@ -35,7 +35,7 @@ def _get_good_points(all_matches, ratio=0.2):
             all_matches]
 
 
-def _filter_by_max_amount(arr, k=10):
+def _filter_by_max_amount(arr, k=50):
     """
     Get top 10 matches for every 2 images.
     """
@@ -49,26 +49,28 @@ def _prepare_images_to_draw(kps, chosen):
     points_to_draw = [[] for _ in range(2 * (len(kps) - 1))]
 
     for i in range(0, 2 * (len(kps) - 1), 2):
-        ps = [kps[i // 2][el.queryIdx].pt for el in chosen[i // 2]]
-        points_to_draw[i] = ps
-
-        ps = [kps[i // 2 + 1][el.trainIdx].pt for el in chosen[i // 2]]
-        points_to_draw[i + 1] = ps
+        points_to_draw[i] = [kps[i // 2][el.queryIdx].pt for el in chosen[i // 2]]
+        points_to_draw[i + 1] = [kps[i // 2 + 1][el.trainIdx].pt for el in chosen[i // 2]]
 
     return points_to_draw
 
 
 def detect_anchors(images):
     kps, descs = _get_anchors_in_all_images(images)
+    print(1)
     matches = _get_all_matches(descs)
+    print(2)
     good_points = _get_good_points(matches)
+    print(3)
     good_points = _filter_by_max_amount(good_points)
+    print(4)
     pixels = _prepare_images_to_draw(kps, good_points)
+    print(5)
 
     return pixels
 
 
 if __name__ == '__main__':
-    paths = []
+    paths = ['imgs/1.jpg', 'imgs/2.jpg', 'imgs/3.jpg']
     images = [cv2.imread(path)[..., ::-1] for path in paths]
     res = detect_anchors(images)

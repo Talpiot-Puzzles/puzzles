@@ -1,0 +1,30 @@
+{
+    "input_data": {
+        "input_path": "DJI_0461.MP4",
+        "is_video": true,
+        "start_time": 10,
+        "duration": 1
+    },
+
+    "filters": {
+        "crop_filter": 0.1,
+        "distort_filter": true,
+        "stretch_histogram": true,
+        "contrast_factor": 10,
+        "split_factor": 1
+    },
+
+    "heights": {
+        "anchor_height": 50.5,
+        "ground_height": 50,
+        "num_of_layers": 3,
+        "layer_thickness": 0.5
+    },
+
+    "result": {
+        "name": "test",
+        "res_path": "./results",
+        "img_path": "./data",
+        "save_images": true
+    }
+}
