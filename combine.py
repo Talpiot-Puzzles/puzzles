@@ -240,9 +240,9 @@ def simple_mean(overlap_img):
 
     return Image.fromarray(res).convert('RGB')
 
-def milo_simple_mean(overlap_img: np.ndarray, ws: np.ndarray) -> Image:
+def simple_mean_with_nans(overlap_img: np.ndarray, ws: np.ndarray) -> Image:
     """
-    Applies the Milo Simple Mean fusion algorithm to an overlap image.
+    Applies simple mean, with consideration of nans, over images array.
 
     Args:
         overlap_img (np.ndarray): The overlap image as a numpy array.
@@ -357,7 +357,7 @@ def combine_process(m_image_position: Dict[str, int], combine_size: Tuple[int, i
 
     print("### End to create overlap array ... ")
     print("### Start mean on the overlap array ...")
-    combined_image = milo_simple_mean(combined_overlap, ws)
+    combined_image = simple_mean_with_nans(combined_overlap, ws)
     print("### End mean on the overlap array ...")
     print("### End combine process ...")
     return combined_image
